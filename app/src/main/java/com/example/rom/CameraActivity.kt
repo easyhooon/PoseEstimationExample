@@ -426,7 +426,12 @@ class CameraActivity : AppCompatActivity() {
             val magnitudeSH = Math.sqrt((vectorSH.x * vectorSH.x + vectorSH.y * vectorSH.y).toDouble())
 
             val cosAngle = dotProduct / (magnitudeSE * magnitudeSH)
-            return Math.toDegrees(Math.acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
+            var angle = Math.toDegrees(Math.acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
+
+            // 20도 보정
+            angle = (angle - 20f).coerceAtLeast(0f)
+
+            return angle
         }
 
         val leftShoulder = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_SHOULDER }?.position
