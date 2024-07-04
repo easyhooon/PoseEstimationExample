@@ -23,7 +23,10 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.example.rom.databinding.ActivityCameraBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.nnapi.NnApiDelegate
 import org.tensorflow.lite.support.common.FileUtil
@@ -31,6 +34,7 @@ import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
+import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -39,7 +43,6 @@ import kotlin.random.Random
 /** 카메라를 표시하고 들어오는 프레임에 대해 객체 감지를 수행하는 액티비티 */
 class CameraActivity : AppCompatActivity() {
     companion object {
-        private val TAG = CameraActivity::class.java.simpleName
         private const val MODEL_PATH = "movenet_lightning.tflite"
     }
 
@@ -98,10 +101,10 @@ class CameraActivity : AppCompatActivity() {
         val helper = PoseEstimationHelper(tflite)
         val inputTensor = tflite.getInputTensor(0)
         val outputTensor = tflite.getOutputTensor(0)
-        Log.d(TAG, "Input tensor shape: ${inputTensor.shape().contentToString()}")
-        Log.d(TAG, "Input tensor type: ${inputTensor.dataType()}")
-        Log.d(TAG, "Output tensor shape: ${outputTensor.shape().contentToString()}")
-        Log.d(TAG, "Output tensor type: ${outputTensor.dataType()}")
+        Timber.d("Input tensor shape: ${inputTensor.shape().contentToString()}")
+        Timber.d("Input tensor type: ${inputTensor.dataType()}")
+        Timber.d("Output tensor shape: ${outputTensor.shape().contentToString()}")
+        Timber.d("Output tensor type: ${outputTensor.dataType()}")
         helper
     }
 
@@ -111,7 +114,7 @@ class CameraActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val inputShape = tflite.getInputTensor(0).shape()
-        Log.d(TAG, "Model input shape: ${inputShape.contentToString()}")
+        Timber.d("Model input shape: ${inputShape.contentToString()}")
 
         binding.btnCaptureCamera.setOnClickListener {
             it.isEnabled = false
@@ -134,11 +137,11 @@ class CameraActivity : AppCompatActivity() {
                 val tfImage = TensorImage.fromBitmap(uprightImage)
                 val processedImage = tfImageProcessor.process(tfImage)
 
-                Log.d(TAG, "Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
+                Timber.d("Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
 
                 val prediction = poseEstimationHelper.predict(processedImage)
 
-                Log.d(TAG, "Predictions: $prediction")
+                Timber.d("Predictions: $prediction")
 
                 prediction.let { posePrediction ->
                     val poseEstimationBitmap = drawPoseEstimation(uprightImage, posePrediction)
@@ -327,7 +330,7 @@ class CameraActivity : AppCompatActivity() {
 
                             val predictions = PoseEstimationHelper(tflite).predict(processedImage)
 
-                            runOnUiThread {
+                            lifecycleScope.launch(Dispatchers.Main) {
                                 if (predictions.isNotEmpty()) {
                                     val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, predictions)
                                     binding.imagePredicted.setImageBitmap(poseEstimationBitmap)
@@ -348,11 +351,11 @@ class CameraActivity : AppCompatActivity() {
                                 val now = System.currentTimeMillis()
                                 val delta = now - lastFpsTimestamp
                                 val fps = 1000 * frameCount.toFloat() / delta
-                                Log.d(TAG, "FPS: ${"%.02f".format(fps)} with tensorSize: ${tfImage.width} x ${tfImage.height}")
+                                Timber.d("FPS: ${"%.02f".format(fps)} with tensorSize: ${tfImage.width} x ${tfImage.height}")
                                 lastFpsTimestamp = now
                             }
                         } else {
-                            runOnUiThread {
+                            lifecycleScope.launch(Dispatchers.Main) {
                                 binding.imagePredicted.visibility = View.GONE
                                 binding.textPrediction.visibility = View.GONE
                             }
@@ -378,7 +381,7 @@ class CameraActivity : AppCompatActivity() {
                     // 프리뷰 사용 사례를 뷰와 연결
                     preview.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 } catch (exc: Exception) {
-                    Log.e(TAG, "Use case binding failed", exc)
+                    Timber.e("Use case binding failed", exc)
                 }
             },
             ContextCompat.getMainExecutor(this),
@@ -464,7 +467,7 @@ class CameraActivity : AppCompatActivity() {
             if (isPoseEstimationEnabled)
                 ContextCompat.getColor(this, android.R.color.holo_green_light)
             else
-                ContextCompat.getColor(this, android.R.color.darker_gray)
+                ContextCompat.getColor(this, android.R.color.darker_gray),
         )
     }
 }

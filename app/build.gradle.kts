@@ -64,4 +64,5 @@ dependencies {
     implementation(libs.tflite.support)
 
     implementation(libs.coil)
+    implementation(libs.timber)
 }
