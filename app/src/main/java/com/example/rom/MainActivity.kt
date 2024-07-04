@@ -124,7 +124,6 @@ class MainActivity : AppCompatActivity() {
                             ivResultImage.load(it.imageByteArray)
                             ivResultImage.visibility = View.VISIBLE
 
-                            btnCaptureCamera.text = "다시 촬영"
                             tvResult.visibility = View.VISIBLE
 
                             tvLeftAngle.visibility = View.VISIBLE
