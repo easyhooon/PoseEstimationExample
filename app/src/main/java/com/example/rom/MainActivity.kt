@@ -35,9 +35,11 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
+import kotlin.math.acos
+import kotlin.math.sqrt
 
 // TODO 오차 보정(문서 및 레포 참고)
-// TODO 신뢰할 수 있는 값만 선별
+// TODO 사진 촬영시 Pose Estimation 이 사물을 제대로 인식하지 못하는 케이스 해결(신뢰할 수 있는 값만 선별)
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val MODEL_PATH = "movenet_lightning.tflite"
@@ -77,7 +79,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -180,11 +181,11 @@ class MainActivity : AppCompatActivity() {
             val vectorSH = PoseEstimationHelper.Position(hip.x - shoulder.x, hip.y - shoulder.y)
 
             val dotProduct = vectorSE.x * vectorSH.x + vectorSE.y * vectorSH.y
-            val magnitudeSE = Math.sqrt((vectorSE.x * vectorSE.x + vectorSE.y * vectorSE.y).toDouble())
-            val magnitudeSH = Math.sqrt((vectorSH.x * vectorSH.x + vectorSH.y * vectorSH.y).toDouble())
+            val magnitudeSE = sqrt((vectorSE.x * vectorSE.x + vectorSE.y * vectorSE.y).toDouble())
+            val magnitudeSH = sqrt((vectorSH.x * vectorSH.x + vectorSH.y * vectorSH.y).toDouble())
 
             val cosAngle = dotProduct / (magnitudeSE * magnitudeSH)
-            var angle = Math.toDegrees(Math.acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
+            var angle = Math.toDegrees(acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
 
             // 20도 보정
             angle = (angle - 20f).coerceAtLeast(0f)
