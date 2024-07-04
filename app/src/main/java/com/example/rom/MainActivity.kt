@@ -19,6 +19,11 @@ import coil.load
 import com.example.rom.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
+// TODO 갤러리 이미지 분석 기능 추가
+// TODO 전면 카메라 전환시 화면 상하 반전 문제 해결
+// TODO 오차 보정(문서 및 레포 참고)
+// TODO 신뢰할 수 있는 값만 선별
+// TODO 실시간 감지 활성화/비활성화 지원 기능 추가
 class MainActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_POSE_ESTIMATION_RESULT = "pose_estimation_result"
