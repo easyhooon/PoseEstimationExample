@@ -11,7 +11,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -72,6 +71,8 @@ class CameraActivity : AppCompatActivity() {
     // 이미지 회전 각도
     private var imageRotationDegrees: Int = 0
 
+    private var isPoseEstimationEnabled = false
+
     // TensorFlow Lite 이미지 처리기 초기화
     private val tfImageProcessor by lazy {
         ImageProcessor.Builder()
@@ -112,7 +113,7 @@ class CameraActivity : AppCompatActivity() {
         val inputShape = tflite.getInputTensor(0).shape()
         Log.d(TAG, "Model input shape: ${inputShape.contentToString()}")
 
-        binding.cameraCaptureButton.setOnClickListener {
+        binding.btnCaptureCamera.setOnClickListener {
             it.isEnabled = false
 
             if (pauseAnalysis) {
@@ -133,10 +134,7 @@ class CameraActivity : AppCompatActivity() {
                 val tfImage = TensorImage.fromBitmap(uprightImage)
                 val processedImage = tfImageProcessor.process(tfImage)
 
-                Log.d(
-                    TAG,
-                    "Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes",
-                )
+                Log.d(TAG, "Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
 
                 val prediction = poseEstimationHelper.predict(processedImage)
 
@@ -163,7 +161,7 @@ class CameraActivity : AppCompatActivity() {
         }
 
         // 카메라 전환 버튼 리스너 설정
-        binding.cameraSwitchButton.setOnClickListener {
+        binding.btnSwitchCamera.setOnClickListener {
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
                 CameraSelector.LENS_FACING_BACK
             } else {
@@ -171,11 +169,24 @@ class CameraActivity : AppCompatActivity() {
             }
             bindCameraUseCases()
         }
+
+        binding.btnTogglePoseEstimation.setOnClickListener {
+            togglePoseEstimation()
+        }
+
+        // 초기 상태 설정
+        updatePoseEstimationButton()
     }
 
     private fun drawPoseEstimation(bitmap: Bitmap, predictions: List<PoseEstimationHelper.PosePrediction>): Bitmap {
         val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(mutableBitmap)
+
+        // 전면 카메라일 경우 캔버스를 수평으로 뒤집음
+        if (isFrontFacing) {
+            canvas.scale(1f, -1f, bitmap.width / 2f, bitmap.height / 2f)
+        }
+
         val paint = Paint()
         paint.strokeWidth = 2f
         paint.style = Paint.Style.STROKE
@@ -259,106 +270,119 @@ class CameraActivity : AppCompatActivity() {
     @SuppressLint("UnsafeExperimentalUsageError")
     private fun bindCameraUseCases() = binding.viewFinder.post {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
+        cameraProviderFuture.addListener(
+            {
+                cameraProvider = cameraProviderFuture.get()
 
-            // 카메라 프리뷰 설정
-            val preview = Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(binding.viewFinder.display.rotation)
-                .build()
+                // 카메라 프리뷰 설정
+                val preview = Preview.Builder()
+                    .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                    .setTargetRotation(binding.viewFinder.display.rotation)
+                    .build()
 
-            // 실시간으로 프레임을 처리할 이미지 분석 사용 사례 설정
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(binding.viewFinder.display.rotation)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build()
+                // 실시간으로 프레임을 처리할 이미지 분석 사용 사례 설정
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                    .setTargetRotation(binding.viewFinder.display.rotation)
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                    .build()
 
-            var frameCounter = 0
-            var lastFpsTimestamp = System.currentTimeMillis()
+                var frameCounter = 0
+                var lastFpsTimestamp = System.currentTimeMillis()
 
-            imageAnalysis.setAnalyzer(
-                executor,
-                ImageAnalysis.Analyzer { image ->
-                    if (!::bitmapBuffer.isInitialized) {
-                        imageRotationDegrees = image.imageInfo.rotationDegrees
-                        bitmapBuffer = Bitmap.createBitmap(
-                            image.width, image.height, Bitmap.Config.ARGB_8888,
-                        )
-                    }
+                imageAnalysis.setAnalyzer(
+                    executor,
+                    ImageAnalysis.Analyzer { image ->
+                        if (!::bitmapBuffer.isInitialized) {
+                            imageRotationDegrees = image.imageInfo.rotationDegrees
+                            bitmapBuffer = Bitmap.createBitmap(
+                                image.width, image.height, Bitmap.Config.ARGB_8888,
+                            )
+                        }
 
-                    if (pauseAnalysis) {
-                        image.close()
-                        return@Analyzer
-                    }
+                        if (pauseAnalysis) {
+                            image.close()
+                            return@Analyzer
+                        }
 
-                    image.use {
-                        bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer)
-                    }
+                        image.use {
+                            bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer)
+                        }
 
-                    val matrix = Matrix().apply {
-                        postRotate(imageRotationDegrees.toFloat())
-                        if (isFrontFacing) postScale(-1f, 1f)
-                    }
-                    val rotatedBitmap = Bitmap.createBitmap(
-                        bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true,
-                    )
-
-                    val tfImage = TensorImage.fromBitmap(rotatedBitmap)
-                    val processedImage = tfImageProcessor.process(tfImage)
-
-                    val predictions = PoseEstimationHelper(tflite).predict(processedImage)
-
-                    runOnUiThread {
-                        if (predictions.isNotEmpty()) {
-                            val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, predictions)
-                            binding.imagePredicted.setImageBitmap(poseEstimationBitmap)
-                            binding.imagePredicted.visibility = View.VISIBLE
-
-                            val armsAngle = calculateArmAngle(predictions)
-                            if (armsAngle != null) {
-                                binding.textPrediction.text = "Left Angle: ${armsAngle.leftAngle}, Right Angle: ${armsAngle.rightAngle}"
-                                binding.textPrediction.visibility = View.VISIBLE
+                        val matrix = Matrix().apply {
+                            postRotate(imageRotationDegrees.toFloat())
+                            if (isFrontFacing) {
+                                postScale(1f, -1f, image.width / 2f, image.height / 2f)
                             }
                         }
-                    }
 
-                    // 전체 파이프라인의 FPS 계산
-                    val frameCount = 10
-                    if (++frameCounter % frameCount == 0) {
-                        frameCounter = 0
-                        val now = System.currentTimeMillis()
-                        val delta = now - lastFpsTimestamp
-                        val fps = 1000 * frameCount.toFloat() / delta
-                        Log.d(TAG, "FPS: ${"%.02f".format(fps)} with tensorSize: ${tfImage.width} x ${tfImage.height}")
-                        lastFpsTimestamp = now
-                    }
-                },
-            )
+                        val rotatedBitmap = Bitmap.createBitmap(
+                            bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true,
+                        )
 
-            // 렌즈 방향 설정
-            val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+                        if (isPoseEstimationEnabled) {
+                            val tfImage = TensorImage.fromBitmap(rotatedBitmap)
+                            val processedImage = tfImageProcessor.process(tfImage)
 
-            try {
-                // 기존 사용 사례 언바인딩
-                cameraProvider?.unbindAll()
+                            val predictions = PoseEstimationHelper(tflite).predict(processedImage)
 
-                // 새로운 사용 사례 바인딩
-                cameraProvider?.bindToLifecycle(
-                    this as LifecycleOwner,
-                    cameraSelector,
-                    preview,
-                    imageAnalysis
+                            runOnUiThread {
+                                if (predictions.isNotEmpty()) {
+                                    val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, predictions)
+                                    binding.imagePredicted.setImageBitmap(poseEstimationBitmap)
+                                    binding.imagePredicted.visibility = View.VISIBLE
+
+                                    val armsAngle = calculateArmAngle(predictions)
+                                    if (armsAngle != null) {
+                                        binding.textPrediction.text = "Left Angle: ${armsAngle.leftAngle}, Right Angle: ${armsAngle.rightAngle}"
+                                        binding.textPrediction.visibility = View.VISIBLE
+                                    }
+                                }
+                            }
+
+                            // 전체 파이프라인의 FPS 계산
+                            val frameCount = 10
+                            if (++frameCounter % frameCount == 0) {
+                                frameCounter = 0
+                                val now = System.currentTimeMillis()
+                                val delta = now - lastFpsTimestamp
+                                val fps = 1000 * frameCount.toFloat() / delta
+                                Log.d(TAG, "FPS: ${"%.02f".format(fps)} with tensorSize: ${tfImage.width} x ${tfImage.height}")
+                                lastFpsTimestamp = now
+                            }
+                        } else {
+                            runOnUiThread {
+                                binding.imagePredicted.visibility = View.GONE
+                                binding.textPrediction.visibility = View.GONE
+                            }
+                        }
+                    },
                 )
 
-                // 프리뷰 사용 사례를 뷰와 연결
-                preview.setSurfaceProvider(binding.viewFinder.surfaceProvider)
-            } catch (exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
-        }, ContextCompat.getMainExecutor(this))
+                // 렌즈 방향 설정
+                val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+
+                try {
+                    // 기존 사용 사례 언바인딩
+                    cameraProvider?.unbindAll()
+
+                    // 새로운 사용 사례 바인딩
+                    cameraProvider?.bindToLifecycle(
+                        this as LifecycleOwner,
+                        cameraSelector,
+                        preview,
+                        imageAnalysis,
+                    )
+
+                    // 프리뷰 사용 사례를 뷰와 연결
+                    preview.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+                } catch (exc: Exception) {
+                    Log.e(TAG, "Use case binding failed", exc)
+                }
+            },
+            ContextCompat.getMainExecutor(this),
+        )
     }
 
     override fun onResume() {
@@ -427,5 +451,20 @@ class CameraActivity : AppCompatActivity() {
         }
 
         return null
+    }
+
+    private fun togglePoseEstimation() {
+        isPoseEstimationEnabled = !isPoseEstimationEnabled
+        updatePoseEstimationButton()
+    }
+
+    private fun updatePoseEstimationButton() {
+        binding.btnTogglePoseEstimation.text = if (isPoseEstimationEnabled) "Pose Est. ON" else "Pose Est. OFF"
+        binding.btnTogglePoseEstimation.setBackgroundColor(
+            if (isPoseEstimationEnabled)
+                ContextCompat.getColor(this, android.R.color.holo_green_light)
+            else
+                ContextCompat.getColor(this, android.R.color.darker_gray)
+        )
     }
 }

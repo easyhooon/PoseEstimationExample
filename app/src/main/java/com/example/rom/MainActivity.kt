@@ -10,8 +10,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -20,10 +18,8 @@ import com.example.rom.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
 // TODO 갤러리 이미지 분석 기능 추가
-// TODO 전면 카메라 전환시 화면 상하 반전 문제 해결
 // TODO 오차 보정(문서 및 레포 참고)
 // TODO 신뢰할 수 있는 값만 선별
-// TODO 실시간 감지 활성화/비활성화 지원 기능 추가
 class MainActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_POSE_ESTIMATION_RESULT = "pose_estimation_result"
@@ -41,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         cameraActivityResultLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
+            ActivityResultContracts.StartActivityForResult(),
         ) { result ->
             val resultData: ResultData?
             if (result.resultCode == RESULT_OK) {
@@ -55,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnCapture.setOnClickListener {
+        binding.btnCaptureCamera.setOnClickListener {
             cameraActivityResultLauncher.launch(Intent(this, CameraActivity::class.java))
         }
 
@@ -79,7 +75,7 @@ class MainActivity : AppCompatActivity() {
                             ivResultImage.load(it.imageByteArray)
                             ivResultImage.visibility = View.VISIBLE
 
-                            btnCapture.text = "다시 촬영"
+                            btnCaptureCamera.text = "다시 촬영"
                             tvResult.visibility = View.VISIBLE
 
                             tvLeftAngle.visibility = View.VISIBLE
