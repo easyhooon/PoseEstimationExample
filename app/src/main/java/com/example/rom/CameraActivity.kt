@@ -13,6 +13,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.os.Bundle
 import android.view.View
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
@@ -21,8 +22,10 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.rom.databinding.ActivityCameraBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,6 +47,8 @@ class CameraActivity : AppCompatActivity() {
     companion object {
         private const val MODEL_PATH = "movenet_lightning.tflite"
     }
+
+    private val viewModel by viewModels<CameraViewModel>()
 
     private lateinit var binding: ActivityCameraBinding
 
@@ -72,8 +77,6 @@ class CameraActivity : AppCompatActivity() {
 
     // 이미지 회전 각도
     private var imageRotationDegrees: Int = 0
-
-    private var isPoseEstimationEnabled = false
 
     // TensorFlow Lite 이미지 처리기 초기화
     private val tfImageProcessor by lazy {
@@ -173,11 +176,19 @@ class CameraActivity : AppCompatActivity() {
         }
 
         binding.btnTogglePoseEstimation.setOnClickListener {
-            togglePoseEstimation()
+            viewModel.togglePoseEstimation()
         }
 
         // 초기 상태 설정
-        updatePoseEstimationButton()
+        updatePoseEstimationButton(false)
+
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isPoseEstimationEnabled.collect { flag ->
+                    updatePoseEstimationButton(flag)
+                }
+            }
+        }
     }
 
     private fun drawPoseEstimation(bitmap: Bitmap, predictions: List<PoseEstimationHelper.PosePrediction>): Bitmap {
@@ -323,7 +334,7 @@ class CameraActivity : AppCompatActivity() {
                             bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true,
                         )
 
-                        if (isPoseEstimationEnabled) {
+                        if (viewModel.isPoseEstimationEnabled.value) {
                             val tfImage = TensorImage.fromBitmap(rotatedBitmap)
                             val processedImage = tfImageProcessor.process(tfImage)
 
@@ -461,15 +472,10 @@ class CameraActivity : AppCompatActivity() {
         return null
     }
 
-    private fun togglePoseEstimation() {
-        isPoseEstimationEnabled = !isPoseEstimationEnabled
-        updatePoseEstimationButton()
-    }
-
-    private fun updatePoseEstimationButton() {
-        binding.btnTogglePoseEstimation.text = if (isPoseEstimationEnabled) "Pose Est. ON" else "Pose Est. OFF"
+    private fun updatePoseEstimationButton(flag: Boolean) {
+        binding.btnTogglePoseEstimation.text = if (flag) "Pose Est. ON" else "Pose Est. OFF"
         binding.btnTogglePoseEstimation.setBackgroundColor(
-            if (isPoseEstimationEnabled)
+            if (flag)
                 ContextCompat.getColor(this, android.R.color.holo_green_light)
             else
                 ContextCompat.getColor(this, android.R.color.darker_gray),
