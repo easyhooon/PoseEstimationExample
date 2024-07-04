@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name ="PRIMARY_COLOR">#60ba61</color>
+    <color name ="SECONDARY_COLOR">#172e4b</color>
+    <color name ="SECONDARY_COLOR_WEEK">#83c3e5</color>
+    <color name ="SPLASH_COLOR">#182e4b</color>
+    <color name ="TOAST_COLOR">#80182e4b</color>
+
+    <color name="TEXT_COLOR_WEEK">#707070</color>
+    <color name="BORDER_COLOR_WEEK">#dddddd</color>
+    <color name="DISABLED_COLOR">#cccccc</color>
+
+    <color name ="dialog_background_btn_cancel">#EEEEEE</color>
+    <color name ="dialog_text_color_btn_ok">#ffffff</color>
+
+    <color name="CIRCLE_DOT_COLOR">#818181</color>
+    <color name="TITLE_COLOR">#ffffff</color>
+
+    <color name="CAMERA_DESCRIPTION_TITLE">#505050</color>
+    <color name="CAMERA_PREVIEW_TITLE">#000000</color>
+    <color name="CAMERA_DESCRIPTION_BODY_BACKGROUND">#f0f0f0</color>
+
+    <color name="icActive">#FFFFFFFF</color>
+    <color name="icFocused">#DDFFFFFF</color>
+    <color name="icPressed">#AAFFFFFF</color>
+</resources>
