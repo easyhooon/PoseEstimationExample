@@ -15,10 +15,9 @@ class PoseEstimationHelper(private val tflite: Interpreter) {
     data class Position(val y: Float, val x: Float)
 
     enum class BodyPart {
-        NOSE, LEFT_EYE, RIGHT_EYE, LEFT_EAR, RIGHT_EAR,
         LEFT_SHOULDER, RIGHT_SHOULDER, LEFT_ELBOW, RIGHT_ELBOW,
         LEFT_WRIST, RIGHT_WRIST, LEFT_HIP, RIGHT_HIP,
-        LEFT_KNEE, RIGHT_KNEE, LEFT_ANKLE, RIGHT_ANKLE
+        LEFT_KNEE, RIGHT_KNEE, LEFT_ANKLE, RIGHT_ANKLE,
     }
 
     fun predict(tensorImage: TensorImage): List<PosePrediction> {
@@ -42,7 +41,10 @@ class PoseEstimationHelper(private val tflite: Interpreter) {
                 val y = outputs.get()
                 val x = outputs.get()
                 val score = outputs.get()
-                keyPoints.add(KeyPoint(BodyPart.entries[i], Position(y, x), score))
+                // 얼굴 부위(처음 5개)를 제외하고 키포인트를 추가합니다.
+                if (i >= 5) {
+                    keyPoints.add(KeyPoint(BodyPart.entries[i - 5], Position(y, x), score))
+                }
             } else {
                 break
             }
