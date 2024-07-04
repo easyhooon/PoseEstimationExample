@@ -447,9 +447,10 @@ class CameraActivity : AppCompatActivity() {
         } else null
 
         if (leftAngle != null && rightAngle != null) {
-            Log.d("ArmAngle", "Left: $leftAngle, Right: $rightAngle")
-            Log.d("Keypoints", "LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
-            Log.d("Keypoints", "RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
+            Timber.tag("ArmAngle").d("Left: $leftAngle, Right: $rightAngle")
+            Timber.tag("Keypoints").d("LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
+            Timber.tag("Keypoints").d("RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
+
             return ResultData(leftAngle, rightAngle)
         }
 

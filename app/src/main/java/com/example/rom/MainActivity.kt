@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
@@ -36,7 +35,6 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 
 // TODO 오차 보정(문서 및 레포 참고)
 // TODO 신뢰할 수 있는 값만 선별
@@ -207,9 +205,10 @@ class MainActivity : AppCompatActivity() {
         } else null
 
         if (leftAngle != null && rightAngle != null) {
-            Log.d("ArmAngle", "Left: $leftAngle, Right: $rightAngle")
-            Log.d("Keypoints", "LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
-            Log.d("Keypoints", "RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
+            Timber.tag("ArmAngle").d( "Left: $leftAngle, Right: $rightAngle")
+            Timber.tag("Keypoints").d( "LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
+            Timber.tag("Keypoints").d( "RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
+
             return ResultData(leftAngle, rightAngle)
         }
 
