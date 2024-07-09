@@ -19,9 +19,18 @@ class PoseEstimationHelper(private val tflite: Interpreter) {
 
     // 신체 부위를 나타내는 열거형 (얼굴 부위 제외)
     enum class BodyPart {
-        LEFT_SHOULDER, RIGHT_SHOULDER, LEFT_ELBOW, RIGHT_ELBOW,
-        LEFT_WRIST, RIGHT_WRIST, LEFT_HIP, RIGHT_HIP,
-        LEFT_KNEE, RIGHT_KNEE, LEFT_ANKLE, RIGHT_ANKLE,
+        LEFT_SHOULDER,
+        RIGHT_SHOULDER,
+        LEFT_ELBOW,
+        RIGHT_ELBOW,
+        LEFT_WRIST,
+        RIGHT_WRIST,
+        LEFT_HIP,
+        RIGHT_HIP,
+        LEFT_KNEE,
+        RIGHT_KNEE,
+        LEFT_ANKLE,
+        RIGHT_ANKLE,
     }
 
     // TensorFlow Lite 모델을 사용하여 포즈 예측을 수행하는 함수
