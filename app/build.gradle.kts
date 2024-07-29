@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.google.services)
     id("kotlin-parcelize")
 }
 
@@ -65,4 +66,6 @@ dependencies {
 
     implementation(libs.coil)
     implementation(libs.timber)
+
+    implementation(platform(libs.firebase.bom))
 }

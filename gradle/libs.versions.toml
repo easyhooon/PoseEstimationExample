@@ -16,6 +16,8 @@ tflite = "2.9.0"
 tflite-support = "0.4.2"
 coil = "2.6.0"
 timber = "5.0.1"
+google-services = "4.4.2"
+firebase = "33.1.2"
 
 [libraries]
 
@@ -33,6 +35,7 @@ androidx-camera-core = { group = "androidx.camera", name = "camera-core", versio
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase" }
 
 tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
 tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tflite" }
@@ -45,4 +48,5 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
 
