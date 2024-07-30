@@ -12,7 +12,9 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.view.View
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
@@ -40,6 +42,11 @@ import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+import kotlin.math.acos
+import kotlin.math.atan2
+import kotlin.math.ceil
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /** 카메라를 표시하고 들어오는 프레임에 대해 객체 감지를 수행하는 액티비티 */
@@ -110,6 +117,9 @@ class CameraActivity : AppCompatActivity() {
         helper
     }
 
+    private var countDownTimer: CountDownTimer? = null
+    private var remainingTime: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
@@ -124,43 +134,16 @@ class CameraActivity : AppCompatActivity() {
             if (pauseAnalysis) {
                 // 분석 재개
                 pauseAnalysis = false
-                binding.imagePredicted.visibility = View.GONE
+                binding.ivPrediction.visibility = View.GONE
+                cancelCountdownTimer()
             } else {
-                // 현재 프레임 캡처 및 분석
-                pauseAnalysis = true
-                val matrix = Matrix().apply {
-                    postRotate(imageRotationDegrees.toFloat())
-                    if (isFrontFacing) postScale(-1f, 1f)
+                if (isFrontFacing) {
+                    // 전면 모드일 경우 10초 타이머 시작
+                    startCountdownTimer()
+                } else {
+                    // 후면 카메라일 경우 바로 캡처 및 분석
+                    captureAndAnalyzeImage()
                 }
-                val uprightImage = Bitmap.createBitmap(
-                    bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true,
-                )
-
-                val tfImage = TensorImage.fromBitmap(uprightImage)
-                val processedImage = tfImageProcessor.process(tfImage)
-
-                Timber.d("Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
-
-                val prediction = poseEstimationHelper.predict(processedImage)
-
-                Timber.d("Predictions: $prediction")
-
-                prediction.let { posePrediction ->
-                    val poseEstimationBitmap = drawPoseEstimation(uprightImage, posePrediction)
-                    binding.imagePredicted.setImageBitmap(poseEstimationBitmap)
-                    binding.imagePredicted.visibility = View.VISIBLE
-
-                    val armsAngle = calculateArmAngle(posePrediction)
-                    if (armsAngle != null) {
-                        val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
-                        val resultIntent = Intent().apply {
-                            putExtra(MainActivity.EXTRA_POSE_ESTIMATION_RESULT, ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray))
-                        }
-                        setResult(RESULT_OK, resultIntent)
-                        finish()
-                    }
-                }
-
                 it.isEnabled = true
             }
         }
@@ -187,6 +170,70 @@ class CameraActivity : AppCompatActivity() {
                 viewModel.isPoseEstimationEnabled.collect { flag ->
                     updatePoseEstimationButton(flag)
                 }
+            }
+        }
+    }
+
+    private fun startCountdownTimer() {
+        remainingTime = 10
+        binding.tvTimber.visibility = View.VISIBLE
+        binding.tvTimber.text = remainingTime.toString()
+
+        countDownTimer = object : CountDownTimer(10000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secondsRemaining = ceil(millisUntilFinished / 1000.0).toInt()
+                binding.tvTimber.text = secondsRemaining.toString()
+            }
+
+            override fun onFinish() {
+                binding.tvTimber.visibility = View.GONE
+                captureAndAnalyzeImage()
+            }
+        }.start()
+    }
+
+    private fun cancelCountdownTimer() {
+        countDownTimer?.cancel()
+        binding.tvTimber.visibility = View.GONE
+    }
+
+    private fun captureAndAnalyzeImage() {
+        // 현재 프레임 캡처 및 분석
+        pauseAnalysis = true
+        val matrix = Matrix().apply {
+            postRotate(imageRotationDegrees.toFloat())
+            if (isFrontFacing) postScale(-1f, 1f)
+        }
+        val uprightImage = Bitmap.createBitmap(
+            bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true,
+        )
+
+        val tfImage = TensorImage.fromBitmap(uprightImage)
+        val processedImage = tfImageProcessor.process(tfImage)
+
+        Timber.d("Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
+
+        val prediction = poseEstimationHelper.predict(processedImage)
+
+        Timber.d("Predictions: $prediction")
+
+        prediction.let { posePrediction ->
+            val poseEstimationBitmap = drawPoseEstimation(uprightImage, posePrediction)
+            binding.ivPrediction.setImageBitmap(poseEstimationBitmap)
+            binding.ivPrediction.visibility = View.VISIBLE
+
+            val armsAngle = calculateArmAngle(posePrediction)
+            if (armsAngle != null) {
+                val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
+                val resultIntent = Intent().apply {
+                    putExtra(MainActivity.EXTRA_POSE_ESTIMATION_RESULT, ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray))
+                }
+                setResult(RESULT_OK, resultIntent)
+                finish()
+            } else {
+                // 유효하지 않은 포즈일 경우, 분석을 재개하고 버튼을 다시 활성화
+                pauseAnalysis = false
+                binding.ivPrediction.visibility = View.GONE
             }
         }
     }
@@ -343,13 +390,13 @@ class CameraActivity : AppCompatActivity() {
                             lifecycleScope.launch(Dispatchers.Main) {
                                 if (predictions.isNotEmpty()) {
                                     val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, predictions)
-                                    binding.imagePredicted.setImageBitmap(poseEstimationBitmap)
-                                    binding.imagePredicted.visibility = View.VISIBLE
+                                    binding.ivPrediction.setImageBitmap(poseEstimationBitmap)
+                                    binding.ivPrediction.visibility = View.VISIBLE
 
                                     val armsAngle = calculateArmAngle(predictions)
                                     if (armsAngle != null) {
-                                        binding.textPrediction.text = "Left Angle: ${armsAngle.leftAngle}, Right Angle: ${armsAngle.rightAngle}"
-                                        binding.textPrediction.visibility = View.VISIBLE
+                                        binding.tvPrediction.text = "Left Angle: ${armsAngle.leftAngle}, Right Angle: ${armsAngle.rightAngle}"
+                                        binding.tvPrediction.visibility = View.VISIBLE
                                     }
                                 }
                             }
@@ -366,8 +413,8 @@ class CameraActivity : AppCompatActivity() {
                             }
                         } else {
                             lifecycleScope.launch(Dispatchers.Main) {
-                                binding.imagePredicted.visibility = View.GONE
-                                binding.textPrediction.visibility = View.GONE
+                                binding.ivPrediction.visibility = View.GONE
+                                binding.tvPrediction.visibility = View.GONE
                             }
                         }
                     },
@@ -433,11 +480,11 @@ class CameraActivity : AppCompatActivity() {
             val vectorSH = PoseEstimationHelper.Position(hip.x - shoulder.x, hip.y - shoulder.y)
 
             val dotProduct = vectorSE.x * vectorSH.x + vectorSE.y * vectorSH.y
-            val magnitudeSE = Math.sqrt((vectorSE.x * vectorSE.x + vectorSE.y * vectorSE.y).toDouble())
-            val magnitudeSH = Math.sqrt((vectorSH.x * vectorSH.x + vectorSH.y * vectorSH.y).toDouble())
+            val magnitudeSE = sqrt((vectorSE.x * vectorSE.x + vectorSE.y * vectorSE.y).toDouble())
+            val magnitudeSH = sqrt((vectorSH.x * vectorSH.x + vectorSH.y * vectorSH.y).toDouble())
 
             val cosAngle = dotProduct / (magnitudeSE * magnitudeSH)
-            val angle = Math.toDegrees(Math.acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
+            val angle = Math.toDegrees(acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
 
             // 20도 보정
             // angle = (angle - 20f).coerceAtLeast(0f)
@@ -461,15 +508,47 @@ class CameraActivity : AppCompatActivity() {
             calculateAngle(rightShoulder, rightElbow, rightHip)
         } else null
 
+//        if (leftAngle != null && rightAngle != null) {
+//            Timber.tag("ArmAngle").d("Left: $leftAngle, Right: $rightAngle")
+//            Timber.tag("Keypoints").d("LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
+//            Timber.tag("Keypoints").d("RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
+//
+//            return ResultData(leftAngle, rightAngle)
+//        }
+
         if (leftAngle != null && rightAngle != null) {
             Timber.tag("ArmAngle").d("Left: $leftAngle, Right: $rightAngle")
             Timber.tag("Keypoints").d("LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
             Timber.tag("Keypoints").d("RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
 
+            val isValid = validatePose(leftAngle, rightAngle, leftShoulder, rightShoulder)
+            if (!isValid) {
+                return null
+            }
+
             return ResultData(leftAngle, rightAngle)
         }
 
         return null
+    }
+
+    private fun validatePose(leftAngle: Float, rightAngle: Float, leftShoulder: PoseEstimationHelper.Position?, rightShoulder: PoseEstimationHelper.Position?): Boolean {
+        // 팔꿈치 접힘 각도 검사
+        if (leftAngle < 170 || rightAngle < 170) {
+            Toast.makeText(this, "팔꿈치가 10도 이상 접혀있습니다. 다시 촬영해주세요.", Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        // 어깨 기울기 검사
+        if (leftShoulder != null && rightShoulder != null) {
+            val shoulderAngle = abs(Math.toDegrees(atan2((rightShoulder.y - leftShoulder.y).toDouble(), (rightShoulder.x - leftShoulder.x).toDouble())).toFloat())
+            if (shoulderAngle > 5) {
+                Toast.makeText(this, "어깨가 5도 이상 기울어져 있습니다. 다시 촬영해주세요.", Toast.LENGTH_SHORT).show()
+                return false
+            }
+        }
+
+        return true
     }
 
     private fun updatePoseEstimationButton(flag: Boolean) {
