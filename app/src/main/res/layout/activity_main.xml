@@ -45,7 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text=""
-        app:layout_constraintEnd_toStartOf="@id/tv_right_angle"
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_value"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_left_angle" />
 
@@ -67,7 +67,7 @@
         android:layout_marginTop="8dp"
         android:text=""
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/tv_left_angle"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_value"
         app:layout_constraintTop_toBottomOf="@id/tv_right_angle" />
 
     <Button

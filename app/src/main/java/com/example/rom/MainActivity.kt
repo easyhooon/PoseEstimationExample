@@ -36,6 +36,7 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import kotlin.math.acos
+import kotlin.math.ceil
 import kotlin.math.sqrt
 
 // TODO 오차 보정(문서 및 레포 참고)
@@ -122,17 +123,20 @@ class MainActivity : AppCompatActivity() {
                         }
                     } else {
                         binding.apply {
+                            val leftAngleRounded = ceil(it.leftAngle * 10) / 10
+                            val rightAngleRounded = ceil(it.rightAngle * 10) / 10
+
                             ivResultImage.load(it.imageByteArray)
                             ivResultImage.visibility = View.VISIBLE
 
                             tvResult.visibility = View.VISIBLE
 
                             tvLeftAngle.visibility = View.VISIBLE
-                            tvLeftAngleValue.text = it.leftAngle.toString()
+                            tvLeftAngleValue.text = String.format("%.1f° ~ %.1f°", leftAngleRounded - 2.5, leftAngleRounded + 2.5)
                             tvLeftAngleValue.visibility = View.VISIBLE
 
                             tvRightAngle.visibility = View.VISIBLE
-                            tvRightAngleValue.text = it.rightAngle.toString()
+                            tvRightAngleValue.text = String.format("%.1f° ~ %.1f°", rightAngleRounded - 2.5, rightAngleRounded + 2.5)
                             tvRightAngleValue.visibility = View.VISIBLE
                         }
                     }
