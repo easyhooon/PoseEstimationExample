@@ -11,7 +11,6 @@
         android:id="@+id/iv_result_image"
         android:layout_width="360dp"
         android:layout_height="480dp"
-        android:layout_marginTop="24dp"
         app:layout_constraintBottom_toTopOf="@id/tv_result"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,9 +20,8 @@
         android:id="@+id/tv_result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="8dp"
         android:text="결과"
-        app:layout_constraintBottom_toTopOf="@id/tv_right_angle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_result_image" />
@@ -32,7 +30,7 @@
         android:id="@+id/tv_left_angle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="4dp"
         android:text="Left Angle"
         app:layout_constraintBottom_toTopOf="@id/btn_capture_camera"
         app:layout_constraintEnd_toStartOf="@id/tv_right_angle"
@@ -53,7 +51,7 @@
         android:id="@+id/tv_right_angle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="4dp"
         android:text="Right Angle"
         app:layout_constraintBottom_toTopOf="@id/btn_capture_camera"
         app:layout_constraintEnd_toEndOf="parent"
@@ -69,6 +67,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/tv_left_angle_value"
         app:layout_constraintTop_toBottomOf="@id/tv_right_angle" />
+
+    <TextView
+        android:id="@+id/tv_validation_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text=""
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_angle_value" />
 
     <Button
         android:id="@+id/btn_capture_camera"
@@ -89,7 +97,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="48dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="18dp"
         android:layout_marginBottom="32dp"
         android:paddingVertical="8dp"
         android:text="앨범에서 가져오기"

@@ -14,7 +14,6 @@ import android.graphics.Paint
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
@@ -28,6 +27,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.rom.MainActivity.Companion.EXTRA_POSE_ESTIMATION_RESULT
+import com.example.rom.MainActivity.Companion.EXTRA_VALIDATION_MESSAGE
 import com.example.rom.databinding.ActivityCameraBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -140,6 +141,7 @@ class CameraActivity : AppCompatActivity() {
                 if (isFrontFacing) {
                     // 전면 모드일 경우 10초 타이머 시작
                     startCountdownTimer()
+                    // captureAndAnalyzeImage()
                 } else {
                     // 후면 카메라일 경우 바로 캡처 및 분석
                     captureAndAnalyzeImage()
@@ -197,36 +199,55 @@ class CameraActivity : AppCompatActivity() {
         binding.tvTimber.visibility = View.GONE
     }
 
+    // 현재 프레임 캡처 및 분석
     private fun captureAndAnalyzeImage() {
-        // 현재 프레임 캡처 및 분석
         pauseAnalysis = true
-        val matrix = Matrix().apply {
-            postRotate(imageRotationDegrees.toFloat())
-            if (isFrontFacing) postScale(-1f, 1f)
-        }
-        val uprightImage = Bitmap.createBitmap(
-            bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true,
+
+        // Step 1: 초기 이미지 캡처
+        val initialBitmap = Bitmap.createBitmap(
+            bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height
         )
 
-        val tfImage = TensorImage.fromBitmap(uprightImage)
+        // Step 2: 이미지 회전 및 뒤집기
+        val matrix = Matrix().apply {
+            postRotate(imageRotationDegrees.toFloat())
+            if (isFrontFacing) {
+                postScale(-1f, -1f, bitmapBuffer.width / 2f, bitmapBuffer.height / 2f)
+            }
+        }
+
+        val rotatedBitmap = Bitmap.createBitmap(
+            initialBitmap, 0, 0, initialBitmap.width, initialBitmap.height, matrix, true
+        )
+
+        // Step 3: 포즈 추정
+        val tfImage = TensorImage.fromBitmap(rotatedBitmap)
         val processedImage = tfImageProcessor.process(tfImage)
-
-        Timber.d("Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
-
         val prediction = poseEstimationHelper.predict(processedImage)
 
+        Timber.d("Processed image size: ${processedImage.width}x${processedImage.height}, " + "buffer size: ${processedImage.buffer.capacity()} bytes")
         Timber.d("Predictions: $prediction")
 
         prediction.let { posePrediction ->
-            val poseEstimationBitmap = drawPoseEstimation(uprightImage, posePrediction)
-            binding.ivPrediction.setImageBitmap(poseEstimationBitmap)
-            binding.ivPrediction.visibility = View.VISIBLE
+            // Step 4: 포즈 그리기
+            val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, posePrediction)
 
-            val armsAngle = calculateArmAngle(posePrediction)
+            //  Step 5: 최종 이미지 조정 (전면 카메라인 경우)
+            val finalBitmap = if (isFrontFacing) {
+                val flipMatrix = Matrix().apply {
+                    postScale(-1f, 1f, poseEstimationBitmap.width / 2f, poseEstimationBitmap.height / 2f)
+                }
+                Bitmap.createBitmap(poseEstimationBitmap, 0, 0, poseEstimationBitmap.width, poseEstimationBitmap.height, flipMatrix, true)
+            } else {
+                poseEstimationBitmap
+            }
+
+            val (armsAngle, validationMessage) = calculateArmAngle(posePrediction)
             if (armsAngle != null) {
-                val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
+                val imageByteArray = bitmapToByteArray(finalBitmap)
                 val resultIntent = Intent().apply {
-                    putExtra(MainActivity.EXTRA_POSE_ESTIMATION_RESULT, ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray))
+                    putExtra(EXTRA_POSE_ESTIMATION_RESULT, ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray))
+                    putExtra(EXTRA_VALIDATION_MESSAGE, validationMessage)
                 }
                 setResult(RESULT_OK, resultIntent)
                 finish()
@@ -268,14 +289,22 @@ class CameraActivity : AppCompatActivity() {
                 Triple(PoseEstimationHelper.BodyPart.RIGHT_KNEE, PoseEstimationHelper.BodyPart.RIGHT_ANKLE, Color.CYAN),
             )
 
+            // 앞카메라일 경우 y축 좌표를 반전 시키는 로직 추가
+            val xScale = 1f
+            val yScale = if (isFrontFacing) -1f else 1f
+            val yOffset = if (isFrontFacing) bitmap.height else 0
+
             connections.forEach { (start, end, color) ->
                 val startPoint = keyPoints.find { it.bodyPart == start }?.position
                 val endPoint = keyPoints.find { it.bodyPart == end }?.position
                 if (startPoint != null && endPoint != null) {
                     paint.color = color
                     canvas.drawLine(
-                        startPoint.x * bitmap.width, startPoint.y * bitmap.height,
-                        endPoint.x * bitmap.width, endPoint.y * bitmap.height, paint,
+                        startPoint.x * xScale * bitmap.width,
+                        (startPoint.y * yScale * bitmap.height) + yOffset,
+                        endPoint.x * xScale * bitmap.width,
+                        (endPoint.y * yScale * bitmap.height) + yOffset,
+                        paint,
                     )
                 }
             }
@@ -297,9 +326,10 @@ class CameraActivity : AppCompatActivity() {
                     else -> Color.CYAN
                 }
                 canvas.drawCircle(
-                    keypoint.position.x * bitmap.width,
-                    keypoint.position.y * bitmap.height,
-                    2f, paint,
+                    keypoint.position.x * xScale * bitmap.width,
+                    (keypoint.position.y * yScale * bitmap.height) + yOffset,
+                    2f,
+                    paint,
                 )
             }
         }
@@ -393,7 +423,7 @@ class CameraActivity : AppCompatActivity() {
                                     binding.ivPrediction.setImageBitmap(poseEstimationBitmap)
                                     binding.ivPrediction.visibility = View.VISIBLE
 
-                                    val armsAngle = calculateArmAngle(predictions)
+                                    val (armsAngle, validationMessage) = calculateArmAngle(predictions)
                                     if (armsAngle != null) {
                                         binding.tvPrediction.text = "Left Angle: ${armsAngle.leftAngle}, Right Angle: ${armsAngle.rightAngle}"
                                         binding.tvPrediction.visibility = View.VISIBLE
@@ -463,7 +493,8 @@ class CameraActivity : AppCompatActivity() {
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
             bindCameraUseCases()
         } else {
-            finish() // 필요한 권한이 없는 경우 종료
+            // 필요한 권한이 없는 경우 종료
+            finish()
         }
     }
 
@@ -472,8 +503,8 @@ class CameraActivity : AppCompatActivity() {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun calculateArmAngle(predictions: List<PoseEstimationHelper.PosePrediction>): ResultData? {
-        val prediction = predictions.firstOrNull() ?: return null
+    private fun calculateArmAngle(predictions: List<PoseEstimationHelper.PosePrediction>): Pair<ResultData?, String> {
+        val prediction = predictions.firstOrNull() ?: return Pair(null, "포즈를 감지할 수 없습니다.")
 
         fun calculateAngle(shoulder: PoseEstimationHelper.Position, elbow: PoseEstimationHelper.Position, hip: PoseEstimationHelper.Position): Float {
             val vectorSE = PoseEstimationHelper.Position(elbow.x - shoulder.x, elbow.y - shoulder.y)
@@ -508,56 +539,81 @@ class CameraActivity : AppCompatActivity() {
             calculateAngle(rightShoulder, rightElbow, rightHip)
         } else null
 
-//        if (leftAngle != null && rightAngle != null) {
-//            Timber.tag("ArmAngle").d("Left: $leftAngle, Right: $rightAngle")
-//            Timber.tag("Keypoints").d("LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
-//            Timber.tag("Keypoints").d("RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
-//
-//            return ResultData(leftAngle, rightAngle)
-//        }
-
         if (leftAngle != null && rightAngle != null) {
             Timber.tag("ArmAngle").d("Left: $leftAngle, Right: $rightAngle")
             Timber.tag("Keypoints").d("LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
             Timber.tag("Keypoints").d("RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
 
-            val isValid = validatePose(leftAngle, rightAngle, leftShoulder, rightShoulder)
-            if (!isValid) {
-                return null
-            }
+            val (isValid, message) = validatePose(prediction)
 
-            return ResultData(leftAngle, rightAngle)
+            return Pair(ResultData(leftAngle, rightAngle), if (isValid) "" else message)
         }
 
-        return null
+        return Pair(null, "각도를 계산할 수 없습니다.")
     }
 
-    private fun validatePose(leftAngle: Float, rightAngle: Float, leftShoulder: PoseEstimationHelper.Position?, rightShoulder: PoseEstimationHelper.Position?): Boolean {
-        // 팔꿈치 접힘 각도 검사
-        if (leftAngle < 170 || rightAngle < 170) {
-            Toast.makeText(this, "팔꿈치가 10도 이상 접혀있습니다. 다시 촬영해주세요.", Toast.LENGTH_SHORT).show()
-            return false
+    private fun validatePose(prediction: PoseEstimationHelper.PosePrediction): Pair<Boolean, String> {
+        fun calculateAngle(point1: PoseEstimationHelper.Position, point2: PoseEstimationHelper.Position, point3: PoseEstimationHelper.Position): Float {
+            val vector1 = PoseEstimationHelper.Position(point1.x - point2.x, point1.y - point2.y)
+            val vector2 = PoseEstimationHelper.Position(point3.x - point2.x, point3.y - point2.y)
+
+            val dotProduct = vector1.x * vector2.x + vector1.y * vector2.y
+            val magnitude1 = sqrt((vector1.x * vector1.x + vector1.y * vector1.y).toDouble())
+            val magnitude2 = sqrt((vector2.x * vector2.x + vector2.y * vector2.y).toDouble())
+
+            val cosAngle = dotProduct / (magnitude1 * magnitude2)
+            return Math.toDegrees(acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
+        }
+
+        fun calculateShoulderSlope(leftShoulder: PoseEstimationHelper.Position, rightShoulder: PoseEstimationHelper.Position): Float {
+            val deltaY = rightShoulder.y - leftShoulder.y
+            val deltaX = rightShoulder.x - leftShoulder.x
+            return Math.toDegrees(atan2(deltaY.toDouble(), deltaX.toDouble())).toFloat()
+        }
+
+        val leftShoulder = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_SHOULDER }?.position
+        val leftElbow = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_ELBOW }?.position
+        val leftWrist = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_WRIST }?.position
+
+        val rightShoulder = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.RIGHT_SHOULDER }?.position
+        val rightElbow = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.RIGHT_ELBOW }?.position
+        val rightWrist = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.RIGHT_WRIST }?.position
+
+        // 팔꿈치 각도 검사
+        if (leftShoulder != null && leftElbow != null && leftWrist != null) {
+            val leftElbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist)
+            if (leftElbowAngle < 170) {
+                return Pair(false, "왼쪽 팔꿈치가 10도 이상 접혀있습니다. 다시 촬영해주세요.")
+            }
+        }
+
+        if (rightShoulder != null && rightElbow != null && rightWrist != null) {
+            val rightElbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist)
+            if (rightElbowAngle < 170) {
+                return Pair(false, "오른쪽 팔꿈치가 10도 이상 접혀있습니다. 다시 촬영해주세요.")
+            }
         }
 
         // 어깨 기울기 검사
         if (leftShoulder != null && rightShoulder != null) {
-            val shoulderAngle = abs(Math.toDegrees(atan2((rightShoulder.y - leftShoulder.y).toDouble(), (rightShoulder.x - leftShoulder.x).toDouble())).toFloat())
-            if (shoulderAngle > 5) {
-                Toast.makeText(this, "어깨가 5도 이상 기울어져 있습니다. 다시 촬영해주세요.", Toast.LENGTH_SHORT).show()
-                return false
+            val shoulderSlope = calculateShoulderSlope(leftShoulder, rightShoulder)
+            if (abs(shoulderSlope) > 5) {
+                return Pair(false, "어깨가 5도 이상 기울어져 있습니다. 다시 촬영해주세요.")
             }
         }
 
-        return true
+        return Pair(true, "")
     }
 
     private fun updatePoseEstimationButton(flag: Boolean) {
-        binding.btnTogglePoseEstimation.text = if (flag) "Pose Est. ON" else "Pose Est. OFF"
-        binding.btnTogglePoseEstimation.setBackgroundColor(
-            if (flag)
-                ContextCompat.getColor(this, android.R.color.holo_green_light)
-            else
-                ContextCompat.getColor(this, android.R.color.darker_gray),
-        )
+        binding.apply {
+            btnTogglePoseEstimation.text = if (flag) "Pose Est. ON" else "Pose Est. OFF"
+            btnTogglePoseEstimation.setBackgroundColor(
+                if (flag)
+                    ContextCompat.getColor(this@CameraActivity, android.R.color.holo_green_light)
+                else
+                    ContextCompat.getColor(this@CameraActivity, android.R.color.darker_gray),
+            )
+        }
     }
 }

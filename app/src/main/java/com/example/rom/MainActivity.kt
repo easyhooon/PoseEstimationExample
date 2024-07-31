@@ -12,7 +12,6 @@ import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.view.View
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val MODEL_PATH = "movenet_lightning.tflite"
         const val EXTRA_POSE_ESTIMATION_RESULT = "pose_estimation_result"
+        const val EXTRA_VALIDATION_MESSAGE = "validation_message"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -83,9 +83,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        cameraActivityResultLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
-        ) { result ->
+        cameraActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val resultData: ResultData?
             if (result.resultCode == RESULT_OK) {
                 resultData = if (SDK_INT >= TIRAMISU) {
@@ -93,8 +91,10 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     result.data?.getParcelableExtra(EXTRA_POSE_ESTIMATION_RESULT)
                 }
-
                 viewModel.setResultData(resultData!!)
+
+                val validationMessage: String? = result.data?.getStringExtra(EXTRA_VALIDATION_MESSAGE)
+                viewModel.setValidationMessage(validationMessage!!)
             }
         }
 
@@ -108,36 +108,51 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.resultData.collect {
-                    if (it.leftAngle == 0f && it.rightAngle == 0f && it.imageByteArray == null) {
-                        binding.apply {
-                            ivResultImage.visibility = View.GONE
+                launch {
+                    viewModel.resultData.collect {
+                        if (it.leftAngle == 0f && it.rightAngle == 0f && it.imageByteArray == null) {
+                            binding.apply {
+                                ivResultImage.visibility = View.GONE
 
-                            tvResult.visibility = View.GONE
+                                tvResult.visibility = View.GONE
 
-                            tvLeftAngle.visibility = View.GONE
-                            tvLeftAngleValue.visibility = View.GONE
+                                tvLeftAngle.visibility = View.GONE
+                                tvLeftAngleValue.visibility = View.GONE
 
-                            tvRightAngle.visibility = View.GONE
-                            tvRightAngleValue.visibility = View.GONE
+                                tvRightAngle.visibility = View.GONE
+                                tvRightAngleValue.visibility = View.GONE
+                            }
+                        } else {
+                            binding.apply {
+                                val leftAngleRounded = ceil(it.leftAngle * 10) / 10
+                                val rightAngleRounded = ceil(it.rightAngle * 10) / 10
+
+                                ivResultImage.load(it.imageByteArray)
+                                ivResultImage.visibility = View.VISIBLE
+
+                                tvResult.visibility = View.VISIBLE
+
+                                tvLeftAngle.visibility = View.VISIBLE
+                                tvLeftAngleValue.text = String.format("%.1f° ~ %.1f°", leftAngleRounded - 2.5, leftAngleRounded + 2.5)
+                                tvLeftAngleValue.visibility = View.VISIBLE
+
+                                tvRightAngle.visibility = View.VISIBLE
+                                tvRightAngleValue.text = String.format("%.1f° ~ %.1f°", rightAngleRounded - 2.5, rightAngleRounded + 2.5)
+                                tvRightAngleValue.visibility = View.VISIBLE
+                            }
                         }
-                    } else {
-                        binding.apply {
-                            val leftAngleRounded = ceil(it.leftAngle * 10) / 10
-                            val rightAngleRounded = ceil(it.rightAngle * 10) / 10
+                    }
+                }
 
-                            ivResultImage.load(it.imageByteArray)
-                            ivResultImage.visibility = View.VISIBLE
+                launch {
+                    viewModel.validationMessage.collect {
+                        if (it.isNotEmpty()) {
+                            binding.tvValidationMessage.text = it
+                            binding.tvValidationMessage.visibility = View.VISIBLE
 
-                            tvResult.visibility = View.VISIBLE
-
-                            tvLeftAngle.visibility = View.VISIBLE
-                            tvLeftAngleValue.text = String.format("%.1f° ~ %.1f°", leftAngleRounded - 2.5, leftAngleRounded + 2.5)
-                            tvLeftAngleValue.visibility = View.VISIBLE
-
-                            tvRightAngle.visibility = View.VISIBLE
-                            tvRightAngleValue.text = String.format("%.1f° ~ %.1f°", rightAngleRounded - 2.5, rightAngleRounded + 2.5)
-                            tvRightAngleValue.visibility = View.VISIBLE
+                            binding.btnCaptureCamera.text = "다시 촬영"
+                        } else {
+                            binding.tvValidationMessage.visibility = View.GONE
                         }
                     }
                 }
