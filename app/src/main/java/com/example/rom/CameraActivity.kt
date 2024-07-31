@@ -75,8 +75,8 @@ class CameraActivity : AppCompatActivity() {
 
     private var cameraProvider: ProcessCameraProvider? = null
 
-    // 카메라 후면 방향
-    private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
+    // 카메라 전면 방향(기본)
+    private var lensFacing: Int = CameraSelector.LENS_FACING_FRONT
 
     // 카메라 전면 방향 여부
     private val isFrontFacing get() = lensFacing == CameraSelector.LENS_FACING_FRONT
