@@ -45,12 +45,7 @@ import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
-import kotlin.math.acos
-import kotlin.math.atan
-import kotlin.math.atan2
 import kotlin.math.ceil
-import kotlin.math.sqrt
 import kotlin.random.Random
 
 /** 카메라를 표시하고 들어오는 프레임에 대해 객체 감지를 수행하는 액티비티 */
@@ -121,6 +116,10 @@ class CameraActivity : AppCompatActivity() {
         helper
     }
 
+    private val shutterSoundManager by lazy {
+        applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+
     private var countDownTimer: CountDownTimer? = null
     private var remainingTime: Int = 0
 
@@ -147,6 +146,7 @@ class CameraActivity : AppCompatActivity() {
                     // captureAndAnalyzeImage()
                 } else {
                     // 후면 카메라일 경우 바로 캡처 및 분석
+                    playShutterSound()
                     captureAndAnalyzeImage()
                 }
                 it.isEnabled = true
@@ -204,14 +204,13 @@ class CameraActivity : AppCompatActivity() {
         binding.tvTimber.visibility = View.GONE
     }
 
-    // 동작 안함
     private fun playShutterSound() {
-        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val volume = audioManager.getStreamVolume(AudioManager.STREAM_SYSTEM)
-        if (volume != 0) {
-            val mediaActionSound = MediaActionSound()
-            mediaActionSound.play(MediaActionSound.SHUTTER_CLICK)
-        }
+        shutterSoundManager.setStreamVolume(
+            AudioManager.STREAM_SYSTEM,
+            1,
+            AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE,
+        )
+        MediaActionSound().play(MediaActionSound.SHUTTER_CLICK)
     }
 
     // 현재 프레임 캡처 및 분석
