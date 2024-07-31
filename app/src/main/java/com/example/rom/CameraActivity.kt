@@ -11,6 +11,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.media.AudioManager
+import android.media.MediaActionSound
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
@@ -182,7 +184,7 @@ class CameraActivity : AppCompatActivity() {
         binding.tvTimber.visibility = View.VISIBLE
         binding.tvTimber.text = remainingTime.toString()
 
-        countDownTimer = object : CountDownTimer(10000, 1000) {
+        countDownTimer = object : CountDownTimer(5000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val secondsRemaining = ceil(millisUntilFinished / 1000.0).toInt()
                 binding.tvTimber.text = secondsRemaining.toString()
@@ -190,6 +192,8 @@ class CameraActivity : AppCompatActivity() {
 
             override fun onFinish() {
                 binding.tvTimber.visibility = View.GONE
+
+                playShutterSound()
                 captureAndAnalyzeImage()
             }
         }.start()
@@ -198,6 +202,15 @@ class CameraActivity : AppCompatActivity() {
     private fun cancelCountdownTimer() {
         countDownTimer?.cancel()
         binding.tvTimber.visibility = View.GONE
+    }
+
+    private fun playShutterSound() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val volume = audioManager.getStreamVolume(AudioManager.STREAM_SYSTEM)
+        if (volume != 0) {
+            val mediaActionSound = MediaActionSound()
+            mediaActionSound.play(MediaActionSound.SHUTTER_CLICK)
+        }
     }
 
     // 현재 프레임 캡처 및 분석
