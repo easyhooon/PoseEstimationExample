@@ -16,6 +16,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -147,8 +148,9 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     viewModel.validationMessage.collect {
                         if (it.isNotEmpty()) {
-                            binding.tvValidationMessage.text = it
-                            binding.tvValidationMessage.visibility = View.VISIBLE
+//                            binding.tvValidationMessage.text = it
+//                            binding.tvValidationMessage.visibility = View.VISIBLE
+                            showErrorDialog(it)
 
                             binding.btnCaptureCamera.text = "다시 촬영"
                         } else {
@@ -301,5 +303,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         return mutableBitmap
+    }
+
+    private fun showErrorDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setTitle("경고")
+            .setMessage(message)
+            .setPositiveButton("확인") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 }
