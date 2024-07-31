@@ -35,9 +35,7 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
-import kotlin.math.acos
 import kotlin.math.ceil
-import kotlin.math.sqrt
 
 // TODO 오차 보정(문서 및 레포 참고)
 // TODO 사진 촬영시 Pose Estimation 이 사물을 제대로 인식하지 못하는 케이스 해결(신뢰할 수 있는 값만 선별)
@@ -148,13 +146,11 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     viewModel.validationMessage.collect {
                         if (it.isNotEmpty()) {
-//                            binding.tvValidationMessage.text = it
-//                            binding.tvValidationMessage.visibility = View.VISIBLE
                             showErrorDialog(it)
 
                             binding.btnCaptureCamera.text = "다시 촬영"
                         } else {
-                            binding.tvValidationMessage.visibility = View.GONE
+                            binding.btnCaptureCamera.text = "다시 촬영"
                         }
                     }
                 }
@@ -178,11 +174,12 @@ class MainActivity : AppCompatActivity() {
                 val predictions = poseEstimationHelper.predict(processedImage)
                 val poseEstimationBitmap = drawPoseEstimation(it, predictions)
 
-                val armsAngle = calculateArmAngle(predictions)
+                val (armsAngle, validationMessage) = viewModel.calculateArmAngle(predictions)
                 if (armsAngle != null) {
                     val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
                     val resultData = ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray)
                     viewModel.setResultData(resultData)
+                    viewModel.setValidationMessage(validationMessage)
                 }
             }
         }
@@ -194,52 +191,7 @@ class MainActivity : AppCompatActivity() {
         return stream.toByteArray()
     }
 
-    private fun calculateArmAngle(predictions: List<PoseEstimationHelper.PosePrediction>): ResultData? {
-        val prediction = predictions.firstOrNull() ?: return null
 
-        fun calculateAngle(shoulder: PoseEstimationHelper.Position, elbow: PoseEstimationHelper.Position, hip: PoseEstimationHelper.Position): Float {
-            val vectorSE = PoseEstimationHelper.Position(elbow.x - shoulder.x, elbow.y - shoulder.y)
-            val vectorSH = PoseEstimationHelper.Position(hip.x - shoulder.x, hip.y - shoulder.y)
-
-            val dotProduct = vectorSE.x * vectorSH.x + vectorSE.y * vectorSH.y
-            val magnitudeSE = sqrt((vectorSE.x * vectorSE.x + vectorSE.y * vectorSE.y).toDouble())
-            val magnitudeSH = sqrt((vectorSH.x * vectorSH.x + vectorSH.y * vectorSH.y).toDouble())
-
-            val cosAngle = dotProduct / (magnitudeSE * magnitudeSH)
-            var angle = Math.toDegrees(acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
-
-            // 20도 보정
-            angle = (angle - 20f).coerceAtLeast(0f)
-
-            return angle
-        }
-
-        val leftShoulder = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_SHOULDER }?.position
-        val leftElbow = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_ELBOW }?.position
-        val leftHip = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.LEFT_HIP }?.position
-
-        val rightShoulder = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.RIGHT_SHOULDER }?.position
-        val rightElbow = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.RIGHT_ELBOW }?.position
-        val rightHip = prediction.keypoints.find { it.bodyPart == PoseEstimationHelper.BodyPart.RIGHT_HIP }?.position
-
-        val leftAngle = if (leftElbow != null && leftShoulder != null && leftHip != null) {
-            calculateAngle(leftShoulder, leftElbow, leftHip)
-        } else null
-
-        val rightAngle = if (rightElbow != null && rightShoulder != null && rightHip != null) {
-            calculateAngle(rightShoulder, rightElbow, rightHip)
-        } else null
-
-        if (leftAngle != null && rightAngle != null) {
-            Timber.tag("ArmAngle").d( "Left: $leftAngle, Right: $rightAngle")
-            Timber.tag("Keypoints").d( "LeftElbow: $leftElbow, LeftShoulder: $leftShoulder, LeftHip: $leftHip")
-            Timber.tag("Keypoints").d( "RightElbow: $rightElbow, RightShoulder: $rightShoulder, RightHip: $rightHip")
-
-            return ResultData(leftAngle, rightAngle)
-        }
-
-        return null
-    }
 
     private fun drawPoseEstimation(bitmap: Bitmap, predictions: List<PoseEstimationHelper.PosePrediction>): Bitmap {
         val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
