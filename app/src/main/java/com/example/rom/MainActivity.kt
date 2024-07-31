@@ -149,8 +149,6 @@ class MainActivity : AppCompatActivity() {
                             showErrorDialog(it)
 
                             binding.btnCaptureCamera.text = "다시 촬영"
-                        } else {
-                            binding.btnCaptureCamera.text = "다시 촬영"
                         }
                     }
                 }
