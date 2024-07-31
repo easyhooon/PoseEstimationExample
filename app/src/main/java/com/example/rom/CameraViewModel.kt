@@ -124,15 +124,15 @@ class CameraViewModel: ViewModel() {
             }
         }
 
-        // 어깨 기울기 검사
-        if (leftShoulder != null && rightShoulder != null) {
-            val shoulderSlope = calculateShoulderSlope(leftShoulder, rightShoulder)
-            val slopeInDegrees = Math.toDegrees(atan(shoulderSlope.toDouble())).toFloat()
-            if (abs(slopeInDegrees) > 5) {
-                val higherShoulder = if (shoulderSlope > 0) "오른쪽" else "왼쪽"
-                return Pair(false, "양쪽 어깨의 높이가 5도 이상 차이납니다. $higherShoulder 어깨가 ${String.format("%.1f", abs(slopeInDegrees))}도 더 높습니다. 어깨를 수평으로 맞추고 다시 촬영해주세요.")
-            }
-        }
+//        // 어깨 기울기 검사
+//        if (leftShoulder != null && rightShoulder != null) {
+//            val shoulderSlope = calculateShoulderSlope(leftShoulder, rightShoulder)
+//            val slopeInDegrees = Math.toDegrees(atan(shoulderSlope.toDouble())).toFloat()
+//            if (abs(slopeInDegrees) > 5) {
+//                val higherShoulder = if (shoulderSlope > 0) "오른쪽" else "왼쪽"
+//                return Pair(false, "양쪽 어깨의 높이가 5도 이상 차이납니다. $higherShoulder 어깨가 ${String.format("%.1f", abs(slopeInDegrees))}도 더 높습니다. 어깨를 수평으로 맞추고 다시 촬영해주세요.")
+//            }
+//        }
 
         return Pair(true, "")
     }

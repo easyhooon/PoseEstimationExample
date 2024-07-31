@@ -204,6 +204,7 @@ class CameraActivity : AppCompatActivity() {
         binding.tvTimber.visibility = View.GONE
     }
 
+    // 사운드를 볼륨에 따라 조절하려면 MediaPlay를 사용 (단, raw 파일이 필요함)
     private fun playShutterSound() {
         shutterSoundManager.setStreamVolume(
             AudioManager.STREAM_SYSTEM,
