@@ -78,7 +78,7 @@ class CameraActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
 
     // 카메라 전면 방향(기본)
-    private var lensFacing: Int = CameraSelector.LENS_FACING_FRONT
+    private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
 
     // 카메라 전면 방향 여부
     private val isFrontFacing get() = lensFacing == CameraSelector.LENS_FACING_FRONT
@@ -204,6 +204,7 @@ class CameraActivity : AppCompatActivity() {
         binding.tvTimber.visibility = View.GONE
     }
 
+    // 동작 안함
     private fun playShutterSound() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val volume = audioManager.getStreamVolume(AudioManager.STREAM_SYSTEM)
