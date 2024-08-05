@@ -336,19 +336,20 @@ class CameraActivity : AppCompatActivity() {
             // 키포인트 그리기
             paint.style = Paint.Style.FILL
             keyPoints.forEach { keypoint ->
-                paint.color = when (keypoint.bodyPart) {
-                    PoseEstimationHelper.BodyPart.LEFT_SHOULDER,
-                    PoseEstimationHelper.BodyPart.LEFT_ELBOW,
-                    PoseEstimationHelper.BodyPart.LEFT_HIP,
-                    -> Color.MAGENTA
-
-                    PoseEstimationHelper.BodyPart.RIGHT_SHOULDER,
-                    PoseEstimationHelper.BodyPart.RIGHT_ELBOW,
-                    PoseEstimationHelper.BodyPart.RIGHT_HIP,
-                    -> Color.YELLOW
-
-                    else -> Color.CYAN
-                }
+//                paint.color = when (keypoint.bodyPart) {
+//                    PoseEstimationHelper.BodyPart.LEFT_SHOULDER,
+//                    PoseEstimationHelper.BodyPart.LEFT_ELBOW,
+//                    PoseEstimationHelper.BodyPart.LEFT_HIP,
+//                    -> Color.MAGENTA
+//
+//                    PoseEstimationHelper.BodyPart.RIGHT_SHOULDER,
+//                    PoseEstimationHelper.BodyPart.RIGHT_ELBOW,
+//                    PoseEstimationHelper.BodyPart.RIGHT_HIP,
+//                    -> Color.YELLOW
+//
+//                    else -> Color.CYAN
+//                }
+                paint.color = Color.MAGENTA
                 canvas.drawCircle(
                     keypoint.position.x * xScale * bitmap.width,
                     (keypoint.position.y * yScale * bitmap.height) + yOffset,

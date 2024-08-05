@@ -307,18 +307,18 @@ class MainActivity : AppCompatActivity() {
         predictions.forEach { prediction ->
             val keyPoints = prediction.keypoints
             val connections = listOf(
-                Triple(PoseEstimationHelper.BodyPart.LEFT_SHOULDER, PoseEstimationHelper.BodyPart.RIGHT_SHOULDER, Color.CYAN),
+                Triple(PoseEstimationHelper.BodyPart.LEFT_SHOULDER, PoseEstimationHelper.BodyPart.RIGHT_SHOULDER, Color.MAGENTA),
                 Triple(PoseEstimationHelper.BodyPart.LEFT_SHOULDER, PoseEstimationHelper.BodyPart.LEFT_ELBOW, Color.MAGENTA),
-                Triple(PoseEstimationHelper.BodyPart.LEFT_ELBOW, PoseEstimationHelper.BodyPart.LEFT_WRIST, Color.CYAN),
-                Triple(PoseEstimationHelper.BodyPart.RIGHT_SHOULDER, PoseEstimationHelper.BodyPart.RIGHT_ELBOW, Color.YELLOW),
-                Triple(PoseEstimationHelper.BodyPart.RIGHT_ELBOW, PoseEstimationHelper.BodyPart.RIGHT_WRIST, Color.CYAN),
+                Triple(PoseEstimationHelper.BodyPart.LEFT_ELBOW, PoseEstimationHelper.BodyPart.LEFT_WRIST, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.RIGHT_SHOULDER, PoseEstimationHelper.BodyPart.RIGHT_ELBOW, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.RIGHT_ELBOW, PoseEstimationHelper.BodyPart.RIGHT_WRIST, Color.MAGENTA),
                 Triple(PoseEstimationHelper.BodyPart.LEFT_SHOULDER, PoseEstimationHelper.BodyPart.LEFT_HIP, Color.MAGENTA),
-                Triple(PoseEstimationHelper.BodyPart.RIGHT_SHOULDER, PoseEstimationHelper.BodyPart.RIGHT_HIP, Color.YELLOW),
-                Triple(PoseEstimationHelper.BodyPart.LEFT_HIP, PoseEstimationHelper.BodyPart.RIGHT_HIP, Color.CYAN),
-                Triple(PoseEstimationHelper.BodyPart.LEFT_HIP, PoseEstimationHelper.BodyPart.LEFT_KNEE, Color.CYAN),
-                Triple(PoseEstimationHelper.BodyPart.LEFT_KNEE, PoseEstimationHelper.BodyPart.LEFT_ANKLE, Color.CYAN),
-                Triple(PoseEstimationHelper.BodyPart.RIGHT_HIP, PoseEstimationHelper.BodyPart.RIGHT_KNEE, Color.CYAN),
-                Triple(PoseEstimationHelper.BodyPart.RIGHT_KNEE, PoseEstimationHelper.BodyPart.RIGHT_ANKLE, Color.CYAN),
+                Triple(PoseEstimationHelper.BodyPart.RIGHT_SHOULDER, PoseEstimationHelper.BodyPart.RIGHT_HIP, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.LEFT_HIP, PoseEstimationHelper.BodyPart.RIGHT_HIP, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.LEFT_HIP, PoseEstimationHelper.BodyPart.LEFT_KNEE, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.LEFT_KNEE, PoseEstimationHelper.BodyPart.LEFT_ANKLE, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.RIGHT_HIP, PoseEstimationHelper.BodyPart.RIGHT_KNEE, Color.MAGENTA),
+                Triple(PoseEstimationHelper.BodyPart.RIGHT_KNEE, PoseEstimationHelper.BodyPart.RIGHT_ANKLE, Color.MAGENTA),
             )
 
             connections.forEach { (start, end, color) ->
@@ -336,25 +336,25 @@ class MainActivity : AppCompatActivity() {
             // 키포인트 그리기
             paint.style = Paint.Style.FILL
             keyPoints.forEach { keypoint ->
-                paint.color = when (keypoint.bodyPart) {
-                    PoseEstimationHelper.BodyPart.LEFT_SHOULDER,
-                    PoseEstimationHelper.BodyPart.LEFT_ELBOW,
-                    PoseEstimationHelper.BodyPart.LEFT_HIP,
-                    -> Color.MAGENTA
-
-                    PoseEstimationHelper.BodyPart.RIGHT_SHOULDER,
-                    PoseEstimationHelper.BodyPart.RIGHT_ELBOW,
-                    PoseEstimationHelper.BodyPart.RIGHT_HIP,
-                    -> Color.YELLOW
-
-                    else -> Color.CYAN
-                }
+//                paint.color = when (keypoint.bodyPart) {
+//                    PoseEstimationHelper.BodyPart.LEFT_SHOULDER,
+//                    PoseEstimationHelper.BodyPart.LEFT_ELBOW,
+//                    PoseEstimationHelper.BodyPart.LEFT_HIP,
+//                    -> Color.MAGENTA
+//
+//                    PoseEstimationHelper.BodyPart.RIGHT_SHOULDER,
+//                    PoseEstimationHelper.BodyPart.RIGHT_ELBOW,
+//                    PoseEstimationHelper.BodyPart.RIGHT_HIP,
+//                    -> Color.YELLOW
+//
+//                    else -> Color.CYAN
+//                }
+                paint.color = Color.MAGENTA
                 canvas.drawCircle(
                     keypoint.position.x * bitmap.width,
                     keypoint.position.y * bitmap.height,
                     2f, paint,
                 )
-                paint.color = Color.MAGENTA
             }
         }
 
