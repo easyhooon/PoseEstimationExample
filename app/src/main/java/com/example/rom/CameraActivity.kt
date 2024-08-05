@@ -13,6 +13,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.media.AudioManager
 import android.media.MediaActionSound
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
@@ -116,8 +117,8 @@ class CameraActivity : AppCompatActivity() {
         helper
     }
 
-    private val shutterSoundManager by lazy {
-        applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val mediaPlayer: MediaPlayer by lazy {
+        MediaPlayer.create(this, R.raw.shutter_sound)
     }
 
     private var countDownTimer: CountDownTimer? = null
@@ -204,14 +205,9 @@ class CameraActivity : AppCompatActivity() {
         binding.tvTimber.visibility = View.GONE
     }
 
-    // 사운드를 볼륨에 따라 조절하려면 MediaPlay를 사용 (단, raw 파일이 필요함)
     private fun playShutterSound() {
-        shutterSoundManager.setStreamVolume(
-            AudioManager.STREAM_SYSTEM,
-            1,
-            AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE,
-        )
-        MediaActionSound().play(MediaActionSound.SHUTTER_CLICK)
+        mediaPlayer.setVolume(0.1f, 0.1f)
+        mediaPlayer.start()
     }
 
     // 현재 프레임 캡처 및 분석
@@ -377,6 +373,8 @@ class CameraActivity : AppCompatActivity() {
         // TensorFlow Lite 리소스 해제
         tflite.close()
         nnApiDelegate.close()
+
+        mediaPlayer.release()
 
         super.onDestroy()
     }
