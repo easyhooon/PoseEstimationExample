@@ -1,16 +1,15 @@
 package com.example.rom
 
+import PoseEstimationHelper
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
-import kotlin.math.abs
 import kotlin.math.acos
-import kotlin.math.atan
 import kotlin.math.sqrt
 
-class CameraViewModel: ViewModel() {
+class CameraViewModel : ViewModel() {
     private val _isPoseEstimationEnabled = MutableStateFlow(false)
     val isPoseEstimationEnabled: StateFlow<Boolean> = _isPoseEstimationEnabled.asStateFlow()
 
@@ -59,18 +58,34 @@ class CameraViewModel: ViewModel() {
             val leftShoulderAngle = calculateAngle(rightShoulder, leftShoulder, leftHip)
             val rightShoulderAngle = calculateAngle(leftShoulder, rightShoulder, rightHip)
 
+            val leftElbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist)
+            val rightElbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist)
+
             // 최종 각도 계산 (보정 적용)
             val leftFinalAngle = leftBaseAngle - (90f - leftShoulderAngle)
             val rightFinalAngle = rightBaseAngle - (90f - rightShoulderAngle)
 
             Timber.tag("ArmAngle").d("Left Base: $leftBaseAngle, Right Base: $rightBaseAngle")
             Timber.tag("ArmAngle").d("Left Shoulder: $leftShoulderAngle, Right Shoulder: $rightShoulderAngle")
+            Timber.tag("ArmAngle").d("Left Elbow: $leftElbowAngle, Right Elbow: $rightElbowAngle")
             Timber.tag("ArmAngle").d("Left Final: $leftFinalAngle, Right Final: $rightFinalAngle")
 
             val (isValid, message) = validatePose(prediction)
 
             // ResultData에 최종 각도를 전달
-            return Pair(ResultData(leftFinalAngle, rightFinalAngle), if (isValid) "" else message)
+            return Pair(
+                ResultData(
+                    leftBaseAngle,
+                    rightBaseAngle,
+                    leftShoulderAngle,
+                    rightShoulderAngle,
+                    leftElbowAngle,
+                    rightElbowAngle,
+                    leftFinalAngle,
+                    rightFinalAngle,
+                ),
+                if (isValid) "" else message,
+            )
         }
 
         return Pair(null, "각도를 계산할 수 없습니다.")

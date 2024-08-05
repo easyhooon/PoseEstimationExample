@@ -1,19 +1,26 @@
 package com.example.rom
 
 import PoseEstimationHelper
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
+import android.view.PixelCopy
 import android.view.View
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -35,7 +42,10 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
-import kotlin.math.ceil
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.OutputStream
 
 // TODO 오차 보정(문서 및 레포 참고)
 // TODO 사진 촬영시 Pose Estimation 이 사물을 제대로 인식하지 못하는 케이스 해결(신뢰할 수 있는 값만 선별)
@@ -101,43 +111,99 @@ class MainActivity : AppCompatActivity() {
             cameraActivityResultLauncher.launch(Intent(this, CameraActivity::class.java))
         }
 
-        binding.btnGallery.setOnClickListener {
-            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+//        binding.btnGallery.setOnClickListener {
+//            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+//        }
+
+        binding.btnSave.setOnClickListener {
+            captureAndSaveScreen()
         }
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.resultData.collect {
-                        if (it.leftAngle == 0f && it.rightAngle == 0f && it.imageByteArray == null) {
+                        if (it.leftAngleBefore == 0f && it.rightAngleBefore == 0f && it.imageByteArray == null) {
                             binding.apply {
                                 ivResultImage.visibility = View.GONE
 
                                 tvResult.visibility = View.GONE
 
-                                tvLeftAngle.visibility = View.GONE
-                                tvLeftAngleValue.visibility = View.GONE
+                                tvLeftAngleBefore.visibility = View.GONE
+                                tvLeftAngleValueBefore.visibility = View.GONE
 
-                                tvRightAngle.visibility = View.GONE
-                                tvRightAngleValue.visibility = View.GONE
+                                tvRightAngleBefore.visibility = View.GONE
+                                tvRightAngleValueBefore.visibility = View.GONE
+
+                                tvLeftShoulderAngle.visibility = View.GONE
+                                tvLeftShoulderAngleValue.visibility = View.GONE
+
+                                tvRightShoulderAngle.visibility = View.GONE
+                                tvRightShoulderAngleValue.visibility = View.GONE
+
+                                tvLeftElbowAngle.visibility = View.GONE
+                                tvLeftElbowAngleValue.visibility = View.GONE
+
+                                tvRightElbowAngle.visibility = View.GONE
+                                tvRightElbowAngleValue.visibility = View.GONE
+
+                                tvLeftAngleAfter.visibility = View.GONE
+                                tvLeftAngleValueAfter.visibility = View.GONE
+
+                                tvRightAngleAfter.visibility = View.GONE
+                                tvRightAngleValueAfter.visibility = View.GONE
+
+                                btnSave.visibility = View.GONE
                             }
                         } else {
                             binding.apply {
-                                val leftAngleRounded = ceil(it.leftAngle * 10) / 10
-                                val rightAngleRounded = ceil(it.rightAngle * 10) / 10
+                                ivResultImage.load(it.imageByteArray)
+                                ivResultImage.visibility = View.VISIBLE
+
+                                tvResult.visibility = View.VISIBLE
+
+                                tvLeftAngleBefore.visibility = View.VISIBLE
+                                tvLeftAngleValueBefore.text =
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.leftAngleBefore, it.leftAngleBefore - 2.5, it.leftAngleBefore + 2.5)
+                                tvLeftAngleValueBefore.visibility = View.VISIBLE
+
+                                tvRightAngleBefore.visibility = View.VISIBLE
+                                tvRightAngleValueBefore.text =
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.rightAngleBefore, it.rightAngleBefore - 2.5, it.rightAngleBefore + 2.5)
+                                tvRightAngleValueBefore.visibility = View.VISIBLE
+
+                                tvLeftShoulderAngle.visibility = View.VISIBLE
+                                tvLeftShoulderAngleValue.text = String.format("%.1f°", it.leftShoulderAngle)
+                                tvLeftShoulderAngleValue.visibility = View.VISIBLE
+
+                                tvRightShoulderAngle.visibility = View.VISIBLE
+                                tvRightShoulderAngleValue.text = String.format("%.1f°", it.rightShoulderAngle)
+                                tvRightShoulderAngleValue.visibility = View.VISIBLE
+
+                                tvLeftElbowAngle.visibility = View.VISIBLE
+                                tvLeftElbowAngleValue.text = String.format("%.1f°", it.leftElbowAngle)
+                                tvLeftElbowAngleValue.visibility = View.VISIBLE
+
+                                tvRightElbowAngle.visibility = View.VISIBLE
+                                tvRightElbowAngleValue.text = String.format("%.1f°", it.rightElbowAngle)
+                                tvRightElbowAngleValue.visibility = View.VISIBLE
 
                                 ivResultImage.load(it.imageByteArray)
                                 ivResultImage.visibility = View.VISIBLE
 
                                 tvResult.visibility = View.VISIBLE
 
-                                tvLeftAngle.visibility = View.VISIBLE
-                                tvLeftAngleValue.text = String.format("%.1f° ~ %.1f°", leftAngleRounded - 2.5, leftAngleRounded + 2.5)
-                                tvLeftAngleValue.visibility = View.VISIBLE
+                                tvLeftAngleAfter.visibility = View.VISIBLE
+                                tvLeftAngleValueAfter.text =
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.leftAngleAfter, it.leftAngleAfter - 2.5, it.leftAngleAfter + 2.5)
+                                tvLeftAngleValueAfter.visibility = View.VISIBLE
 
-                                tvRightAngle.visibility = View.VISIBLE
-                                tvRightAngleValue.text = String.format("%.1f° ~ %.1f°", rightAngleRounded - 2.5, rightAngleRounded + 2.5)
-                                tvRightAngleValue.visibility = View.VISIBLE
+                                tvRightAngleAfter.visibility = View.VISIBLE
+                                tvRightAngleValueAfter.text =
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.rightAngleAfter, it.rightAngleAfter - 2.5, it.rightAngleAfter + 2.5)
+                                tvRightAngleValueAfter.visibility = View.VISIBLE
+
+                                btnSave.visibility = View.VISIBLE
                             }
                         }
                     }
@@ -153,6 +219,36 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun captureAndSaveScreen() {
+        val rootView = window.decorView.rootView
+        rootView.isDrawingCacheEnabled = true
+        val bitmap = Bitmap.createBitmap(rootView.drawingCache)
+        rootView.isDrawingCacheEnabled = false
+
+        val fileName = "ROM_${System.currentTimeMillis()}.jpg"
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/ROM")
+        }
+
+        var outputStream: OutputStream? = null
+        var uri: Uri?
+        try {
+            uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            outputStream = uri?.let { contentResolver.openOutputStream(it) }
+            outputStream?.use {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+            }
+            Toast.makeText(this, "사진이 저장되었습니다.", Toast.LENGTH_SHORT).show()
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(this, "사진 저장을 실패하였습니다.", Toast.LENGTH_SHORT).show()
+        } finally {
+            outputStream?.close()
         }
     }
 
@@ -175,7 +271,17 @@ class MainActivity : AppCompatActivity() {
                 val (armsAngle, validationMessage) = viewModel.calculateArmAngle(predictions)
                 if (armsAngle != null) {
                     val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
-                    val resultData = ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray)
+                    val resultData = ResultData(
+                        armsAngle.leftAngleBefore,
+                        armsAngle.rightAngleBefore,
+                        armsAngle.leftShoulderAngle,
+                        armsAngle.rightShoulderAngle,
+                        armsAngle.leftElbowAngle,
+                        armsAngle.rightElbowAngle,
+                        armsAngle.leftAngleAfter,
+                        armsAngle.rightAngleAfter,
+                        imageByteArray,
+                    )
                     viewModel.setResultData(resultData)
                     viewModel.setValidationMessage(validationMessage)
                 }
@@ -188,7 +294,6 @@ class MainActivity : AppCompatActivity() {
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
         return stream.toByteArray()
     }
-
 
 
     private fun drawPoseEstimation(bitmap: Bitmap, predictions: List<PoseEstimationHelper.PosePrediction>): Bitmap {
@@ -263,5 +368,77 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .show()
+    }
+
+//    private fun captureScreen(): Bitmap {
+//        val rootView = window.decorView.rootView
+//        rootView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+//        rootView.isDrawingCacheEnabled = true
+//        val bitmap = Bitmap.createBitmap(rootView.drawingCache)
+//        rootView.isDrawingCacheEnabled = false
+//
+//        return bitmap
+//    }
+
+    private fun captureScreen(callback: (Bitmap?) -> Unit) {
+        val rootView = window.decorView.rootView
+        val bitmap = Bitmap.createBitmap(rootView.width, rootView.height, Bitmap.Config.ARGB_8888)
+        val locationOfViewInWindow = IntArray(2)
+        rootView.getLocationInWindow(locationOfViewInWindow)
+        try {
+            PixelCopy.request(
+                window,
+                Rect(
+                    locationOfViewInWindow[0], locationOfViewInWindow[1],
+                    locationOfViewInWindow[0] + rootView.width, locationOfViewInWindow[1] + rootView.height,
+                ),
+                bitmap,
+                { copyResult ->
+                    if (copyResult == PixelCopy.SUCCESS) {
+                        callback(bitmap)
+                    } else {
+                        callback(null)
+                    }
+                },
+                Handler(Looper.getMainLooper()),
+            )
+        } catch (e: IllegalArgumentException) {
+            callback(null)
+        }
+    }
+
+    private fun saveImageToFile(bitmap: Bitmap) {
+        // 저장할 디렉토리 생성
+        val directory = File(getExternalFilesDir(null), "ROM")
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        // 파일 이름 생성 (현재 시간을 사용)
+        val fileName = "capture_${System.currentTimeMillis()}.png"
+        val file = File(directory, fileName)
+
+        try {
+            // 비트맵을 파일로 저장
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+
+            // 미디어 스캐너에 파일 추가
+            MediaScannerConnection.scanFile(
+                this,
+                arrayOf(file.toString()),
+                null,
+            ) { path, uri ->
+                runOnUiThread {
+                    Toast.makeText(this, "이미지가 저장되었습니다: $path", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            runOnUiThread {
+                Toast.makeText(this, "이미지 저장 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

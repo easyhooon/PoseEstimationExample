@@ -9,8 +9,8 @@
 
     <ImageView
         android:id="@+id/iv_result_image"
-        android:layout_width="360dp"
-        android:layout_height="480dp"
+        android:layout_width="240dp"
+        android:layout_height="360dp"
         app:layout_constraintBottom_toTopOf="@id/tv_result"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -27,73 +27,209 @@
         app:layout_constraintTop_toBottomOf="@id/iv_result_image" />
 
     <TextView
-        android:id="@+id/tv_left_angle"
+        android:id="@+id/tv_left_angle_before"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Left Angle"
-        app:layout_constraintBottom_toTopOf="@id/btn_capture_camera"
-        app:layout_constraintEnd_toStartOf="@id/tv_right_angle"
+        android:gravity="center"
+        android:text="보정 전 왼쪽 어깨 각도"
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_before"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/iv_result_image" />
+        app:layout_constraintTop_toBottomOf="@id/tv_result" />
 
     <TextView
-        android:id="@+id/tv_left_angle_value"
+        android:id="@+id/tv_left_angle_value_before"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_value_before"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_angle_before" />
+
+    <TextView
+        android:id="@+id/tv_right_angle_before"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="보정 전 오른쪽 어깨 각도"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_before"
+        app:layout_constraintTop_toBottomOf="@id/tv_result" />
+
+    <TextView
+        android:id="@+id/tv_right_angle_value_before"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_value_before"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_angle_before" />
+
+    <TextView
+        android:id="@+id/tv_left_shoulder_angle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text=""
-        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_value"
+        android:gravity="center"
+        android:text="왼쪽 어깨 각도"
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_after"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_left_angle" />
+        app:layout_constraintTop_toBottomOf="@id/tv_left_angle_value_before" />
 
     <TextView
-        android:id="@+id/tv_right_angle"
+        android:id="@+id/tv_left_shoulder_angle_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Right Angle"
-        app:layout_constraintBottom_toTopOf="@id/btn_capture_camera"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/tv_left_angle"
-        app:layout_constraintTop_toBottomOf="@id/iv_result_image" />
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_value_after"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_shoulder_angle" />
 
     <TextView
-        android:id="@+id/tv_right_angle_value"
+        android:id="@+id/tv_right_shoulder_angle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="오른쪽 어깨 각도"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_after"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_angle_value_before" />
+
+    <TextView
+        android:id="@+id/tv_right_shoulder_angle_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
         android:text=""
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/tv_left_angle_value"
-        app:layout_constraintTop_toBottomOf="@id/tv_right_angle" />
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_value_after"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_shoulder_angle" />
+
+    <TextView
+        android:id="@+id/tv_left_elbow_angle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="왼쪽 팔꿈치 각도"
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_after"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_shoulder_angle_value" />
+
+    <TextView
+        android:id="@+id/tv_left_elbow_angle_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_value_after"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_elbow_angle" />
+
+    <TextView
+        android:id="@+id/tv_right_elbow_angle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="오른쪽 팔꿈치 각도"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_after"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_shoulder_angle_value" />
+
+    <TextView
+        android:id="@+id/tv_right_elbow_angle_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_value_after"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_elbow_angle" />
+
+    <TextView
+        android:id="@+id/tv_left_angle_after"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="보정 후 왼쪽 어깨 각도"
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_after"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_elbow_angle_value" />
+
+    <TextView
+        android:id="@+id/tv_left_angle_value_after"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toStartOf="@id/tv_right_angle_value_after"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_left_angle_after" />
+
+    <TextView
+        android:id="@+id/tv_right_angle_after"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="보정 후 오른쪽 어깨 각도"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_after"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_elbow_angle_value" />
+
+    <TextView
+        android:id="@+id/tv_right_angle_value_after"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_left_angle_value_after"
+        app:layout_constraintTop_toBottomOf="@id/tv_right_angle_after" />
 
     <Button
         android:id="@+id/btn_capture_camera"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="48dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="96dp"
         android:paddingVertical="8dp"
         android:text="사진 촬영"
-        android:textSize="18dp"
-        app:layout_constraintBottom_toTopOf="@id/btn_gallery"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/btn_gallery"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="48dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginBottom="32dp"
-        android:paddingVertical="8dp"
-        android:text="앨범에서 가져오기"
         android:textSize="18dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <!--    <Button-->
+    <!--        android:id="@+id/btn_gallery"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:layout_marginHorizontal="48dp"-->
+    <!--        android:layout_marginTop="18dp"-->
+    <!--        android:layout_marginBottom="32dp"-->
+    <!--        android:paddingVertical="8dp"-->
+    <!--        android:text="앨범에서 가져오기"-->
+    <!--        android:textSize="18dp"-->
+    <!--        app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent"-->
+    <!--        app:layout_constraintStart_toStartOf="parent" />-->
+
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="48dp"
+        android:layout_marginTop="8dp"
+        android:paddingVertical="8dp"
+        android:text="저장하기 "
+        android:textSize="18dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_capture_camera" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

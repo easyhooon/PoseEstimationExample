@@ -261,7 +261,16 @@ class CameraActivity : AppCompatActivity() {
             if (armsAngle != null) {
                 val imageByteArray = bitmapToByteArray(finalBitmap)
                 val resultIntent = Intent().apply {
-                    putExtra(EXTRA_POSE_ESTIMATION_RESULT, ResultData(armsAngle.leftAngle, armsAngle.rightAngle, imageByteArray))
+                    putExtra(EXTRA_POSE_ESTIMATION_RESULT, ResultData(
+                        armsAngle.leftAngleBefore,
+                        armsAngle.rightAngleBefore,
+                        armsAngle.leftShoulderAngle,
+                        armsAngle.rightShoulderAngle,
+                        armsAngle.leftElbowAngle,
+                        armsAngle.rightElbowAngle,
+                        armsAngle.leftAngleAfter,
+                        armsAngle.rightAngleAfter,
+                        imageByteArray))
                     putExtra(EXTRA_VALIDATION_MESSAGE, validationMessage)
                 }
                 setResult(RESULT_OK, resultIntent)
@@ -440,7 +449,7 @@ class CameraActivity : AppCompatActivity() {
 
                                     val (armsAngle, validationMessage) = viewModel.calculateArmAngle(predictions)
                                     if (armsAngle != null) {
-                                        binding.tvPrediction.text = "Left Angle: ${armsAngle.leftAngle}, Right Angle: ${armsAngle.rightAngle}"
+                                        binding.tvPrediction.text = "Left Angle: ${armsAngle.leftAngleBefore}, Right Angle: ${armsAngle.rightAngleBefore}"
                                         binding.tvPrediction.visibility = View.VISIBLE
                                     }
                                 }
