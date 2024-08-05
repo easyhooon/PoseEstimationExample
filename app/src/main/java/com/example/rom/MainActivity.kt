@@ -354,6 +354,7 @@ class MainActivity : AppCompatActivity() {
                     keypoint.position.y * bitmap.height,
                     2f, paint,
                 )
+                paint.color = Color.MAGENTA
             }
         }
 
@@ -368,77 +369,5 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .show()
-    }
-
-//    private fun captureScreen(): Bitmap {
-//        val rootView = window.decorView.rootView
-//        rootView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
-//        rootView.isDrawingCacheEnabled = true
-//        val bitmap = Bitmap.createBitmap(rootView.drawingCache)
-//        rootView.isDrawingCacheEnabled = false
-//
-//        return bitmap
-//    }
-
-    private fun captureScreen(callback: (Bitmap?) -> Unit) {
-        val rootView = window.decorView.rootView
-        val bitmap = Bitmap.createBitmap(rootView.width, rootView.height, Bitmap.Config.ARGB_8888)
-        val locationOfViewInWindow = IntArray(2)
-        rootView.getLocationInWindow(locationOfViewInWindow)
-        try {
-            PixelCopy.request(
-                window,
-                Rect(
-                    locationOfViewInWindow[0], locationOfViewInWindow[1],
-                    locationOfViewInWindow[0] + rootView.width, locationOfViewInWindow[1] + rootView.height,
-                ),
-                bitmap,
-                { copyResult ->
-                    if (copyResult == PixelCopy.SUCCESS) {
-                        callback(bitmap)
-                    } else {
-                        callback(null)
-                    }
-                },
-                Handler(Looper.getMainLooper()),
-            )
-        } catch (e: IllegalArgumentException) {
-            callback(null)
-        }
-    }
-
-    private fun saveImageToFile(bitmap: Bitmap) {
-        // 저장할 디렉토리 생성
-        val directory = File(getExternalFilesDir(null), "ROM")
-        if (!directory.exists()) {
-            directory.mkdirs()
-        }
-
-        // 파일 이름 생성 (현재 시간을 사용)
-        val fileName = "capture_${System.currentTimeMillis()}.png"
-        val file = File(directory, fileName)
-
-        try {
-            // 비트맵을 파일로 저장
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-
-            // 미디어 스캐너에 파일 추가
-            MediaScannerConnection.scanFile(
-                this,
-                arrayOf(file.toString()),
-                null,
-            ) { path, uri ->
-                runOnUiThread {
-                    Toast.makeText(this, "이미지가 저장되었습니다: $path", Toast.LENGTH_SHORT).show()
-                }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            runOnUiThread {
-                Toast.makeText(this, "이미지 저장 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 }

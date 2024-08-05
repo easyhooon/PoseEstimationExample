@@ -19,6 +19,11 @@ class PoseEstimationHelper(private val tflite: Interpreter) {
 
     // 신체 부위를 나타내는 열거형 (얼굴 부위 제외)
     enum class BodyPart {
+        NOSE,
+        LEFT_EYE,
+        RIGHT_EYE,
+        LEFT_EAR,
+        RIGHT_EAR,
         LEFT_SHOULDER,
         RIGHT_SHOULDER,
         LEFT_ELBOW,
@@ -60,9 +65,10 @@ class PoseEstimationHelper(private val tflite: Interpreter) {
                 val x = outputs.get()
                 val score = outputs.get()
                 // 얼굴 부위(처음 5개)를 제외하고 키포인트를 추가
-                if (i >= 5) {
-                    keyPoints.add(KeyPoint(BodyPart.entries[i - 5], Position(y, x), score))
-                }
+//                if (i >= 5) {
+//                    keyPoints.add(KeyPoint(BodyPart.entries[i - 5], Position(y, x), score))
+//                }
+                keyPoints.add(KeyPoint(BodyPart.entries[i], Position(y, x), score))
             } else {
                 break
             }
