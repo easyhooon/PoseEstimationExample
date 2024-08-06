@@ -2,7 +2,6 @@ package com.example.rom
 
 import PoseEstimationHelper
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,8 +10,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.media.AudioManager
-import android.media.MediaActionSound
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -74,7 +71,7 @@ class CameraActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
 
     // 카메라 전면 방향(기본)
-    private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
+    private var lensFacing: Int = CameraSelector.LENS_FACING_FRONT
 
     // 카메라 전면 방향 여부
     private val isFrontFacing get() = lensFacing == CameraSelector.LENS_FACING_FRONT
@@ -144,7 +141,6 @@ class CameraActivity : AppCompatActivity() {
                 if (isFrontFacing) {
                     // 전면 모드일 경우 10초 타이머 시작
                     startCountdownTimer()
-                    // captureAndAnalyzeImage()
                 } else {
                     // 후면 카메라일 경우 바로 캡처 및 분석
                     playShutterSound()
@@ -156,7 +152,7 @@ class CameraActivity : AppCompatActivity() {
 
         // 카메라 전환 버튼 리스너 설정
         binding.btnSwitchCamera.setOnClickListener {
-            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+            lensFacing = if (isFrontFacing) {
                 CameraSelector.LENS_FACING_BACK
             } else {
                 CameraSelector.LENS_FACING_FRONT
@@ -223,6 +219,10 @@ class CameraActivity : AppCompatActivity() {
         val matrix = Matrix().apply {
             postRotate(imageRotationDegrees.toFloat())
             if (isFrontFacing) {
+                // 전면 카메라일 때만 좌우로 뒤집기
+                postScale(-1f, 1f, bitmapBuffer.width / 2f, bitmapBuffer.height / 2f)
+            } else {
+                // 후면 카메라일 경우 상하 좌우 반전
                 postScale(-1f, -1f, bitmapBuffer.width / 2f, bitmapBuffer.height / 2f)
             }
         }
@@ -243,19 +243,9 @@ class CameraActivity : AppCompatActivity() {
             // Step 4: 포즈 그리기
             val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, posePrediction)
 
-            //  Step 5: 최종 이미지 조정 (전면 카메라인 경우)
-            val finalBitmap = if (isFrontFacing) {
-                val flipMatrix = Matrix().apply {
-                    postScale(-1f, 1f, poseEstimationBitmap.width / 2f, poseEstimationBitmap.height / 2f)
-                }
-                Bitmap.createBitmap(poseEstimationBitmap, 0, 0, poseEstimationBitmap.width, poseEstimationBitmap.height, flipMatrix, true)
-            } else {
-                poseEstimationBitmap
-            }
-
             val (armsAngle, validationMessage) = viewModel.calculateArmAngle(posePrediction)
             if (armsAngle != null) {
-                val imageByteArray = bitmapToByteArray(finalBitmap)
+                val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
                 val resultIntent = Intent().apply {
                     putExtra(EXTRA_POSE_ESTIMATION_RESULT, ResultData(
                         armsAngle.leftAngleBefore,
@@ -283,11 +273,6 @@ class CameraActivity : AppCompatActivity() {
         val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(mutableBitmap)
 
-        // 전면 카메라일 경우 캔버스를 수평으로 뒤집음
-        if (isFrontFacing) {
-            canvas.scale(1f, -1f, bitmap.width / 2f, bitmap.height / 2f)
-        }
-
         val paint = Paint()
         paint.strokeWidth = 2f
         paint.style = Paint.Style.STROKE
@@ -313,10 +298,9 @@ class CameraActivity : AppCompatActivity() {
                 Triple(PoseEstimationHelper.BodyPart.RIGHT_KNEE, PoseEstimationHelper.BodyPart.RIGHT_ANKLE, Color.MAGENTA),
             )
 
-            // 앞카메라일 경우 y축 좌표를 반전 시키는 로직 추가
             val xScale = 1f
-            val yScale = if (isFrontFacing) -1f else 1f
-            val yOffset = if (isFrontFacing) bitmap.height else 0
+            val yScale = 1f
+            val yOffset = 0
 
             connections.forEach { (start, end, color) ->
                 val startPoint = keyPoints.find { it.bodyPart == start }?.position
@@ -336,19 +320,6 @@ class CameraActivity : AppCompatActivity() {
             // 키포인트 그리기
             paint.style = Paint.Style.FILL
             keyPoints.forEach { keypoint ->
-//                paint.color = when (keypoint.bodyPart) {
-//                    PoseEstimationHelper.BodyPart.LEFT_SHOULDER,
-//                    PoseEstimationHelper.BodyPart.LEFT_ELBOW,
-//                    PoseEstimationHelper.BodyPart.LEFT_HIP,
-//                    -> Color.MAGENTA
-//
-//                    PoseEstimationHelper.BodyPart.RIGHT_SHOULDER,
-//                    PoseEstimationHelper.BodyPart.RIGHT_ELBOW,
-//                    PoseEstimationHelper.BodyPart.RIGHT_HIP,
-//                    -> Color.YELLOW
-//
-//                    else -> Color.CYAN
-//                }
                 paint.color = Color.MAGENTA
                 canvas.drawCircle(
                     keypoint.position.x * xScale * bitmap.width,
@@ -384,7 +355,6 @@ class CameraActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    @SuppressLint("UnsafeExperimentalUsageError")
     private fun bindCameraUseCases() = binding.viewFinder.post {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener(
@@ -430,7 +400,10 @@ class CameraActivity : AppCompatActivity() {
                         val matrix = Matrix().apply {
                             postRotate(imageRotationDegrees.toFloat())
                             if (isFrontFacing) {
-                                postScale(1f, -1f, image.width / 2f, image.height / 2f)
+                                postScale(-1f, 1f, image.width / 2f, image.height / 2f)
+                            } else {
+                                // 후면 카메라일 경우 상하 반전
+                                postScale(-1f, -1f, image.width / 2f, image.height / 2f)
                             }
                         }
 
