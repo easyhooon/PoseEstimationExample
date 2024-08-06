@@ -33,6 +33,7 @@ class CameraViewModel : ViewModel() {
             val magnitude2 = sqrt((vector2.x * vector2.x + vector2.y * vector2.y).toDouble())
 
             val cosAngle = dotProduct / (magnitude1 * magnitude2)
+
             return Math.toDegrees(acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
         }
 
@@ -135,6 +136,7 @@ class CameraViewModel : ViewModel() {
         // 왼쪽 팔꿈치 각도 검사
         if (leftShoulder != null && leftElbow != null && leftWrist != null) {
             val leftElbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist)
+            Timber.tag("validatePose").d("Left Elbow: $leftElbowAngle")
             if (leftElbowAngle < 170) {
                 return Pair(false, "왼쪽 팔꿈치가 10도 이상 접혀있습니다. 다시 촬영해주세요.")
             }
@@ -143,6 +145,7 @@ class CameraViewModel : ViewModel() {
         // 오른쪽 팔꿈치 각도 검사
         if (rightShoulder != null && rightElbow != null && rightWrist != null) {
             val rightElbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist)
+            Timber.tag("validatePose").d("Right Elbow: $rightElbowAngle")
             if (rightElbowAngle < 170) {
                 return Pair(false, "오른쪽 팔꿈치가 10도 이상 접혀있습니다. 다시 촬영해주세요.")
             }

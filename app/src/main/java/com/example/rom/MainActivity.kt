@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.resultData.collect {
-                        if (it.leftAngleBefore == 0f && it.rightAngleBefore == 0f && it.imageByteArray == null) {
+                        if (it.imageByteArray == null) {
                             binding.apply {
                                 ivResultImage.visibility = View.GONE
 
@@ -367,6 +367,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton("확인") { dialog, _ ->
                 dialog.dismiss()
+                viewModel.clearValidationMessage()
             }
             .show()
     }

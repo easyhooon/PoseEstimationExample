@@ -143,4 +143,8 @@ class MainViewModel: ViewModel() {
 
         return Pair(true, "")
     }
+
+    fun clearValidationMessage() {
+        _validationMessage.value = ""
+    }
 }
