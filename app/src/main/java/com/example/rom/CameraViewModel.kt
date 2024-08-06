@@ -97,14 +97,23 @@ class CameraViewModel : ViewModel() {
             point2: PoseEstimationHelper.Position,
             point3: PoseEstimationHelper.Position,
         ): Float {
+            // point2 를 기준점으로 하여 point1 과 point3 로의 벡터를 생성
             val vector1 = PoseEstimationHelper.Position(point1.x - point2.x, point1.y - point2.y)
             val vector2 = PoseEstimationHelper.Position(point3.x - point2.x, point3.y - point2.y)
 
+            // 두 벡터의 내적을 계산
             val dotProduct = vector1.x * vector2.x + vector1.y * vector2.y
+            // 두 벡터의 크기를 계산
             val magnitude1 = sqrt((vector1.x * vector1.x + vector1.y * vector1.y).toDouble())
             val magnitude2 = sqrt((vector2.x * vector2.x + vector2.y * vector2.y).toDouble())
 
+            // 코사인 각도 계산
             val cosAngle = dotProduct / (magnitude1 * magnitude2)
+
+            // 아크 코사인 계산 및 라디안에서 도(degree)로 변환
+            // 1. cosAngle의 아크코사인을 구하여 라디안 각도를 얻음.
+            // 2. coerceIn(-1.0, 1.0)은 코사인 값을 -1에서 1 사이로 제한 (부동소수점 오차 방지)
+            // 3. Math.toDegrees()를 사용하여 라디안을 도로 변환
             return Math.toDegrees(acos(cosAngle.coerceIn(-1.0, 1.0))).toFloat()
         }
 
