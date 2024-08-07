@@ -12,7 +12,6 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -23,10 +22,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.example.rom.MainActivity.Companion.EXTRA_POSE_ESTIMATION_RESULT
 import com.example.rom.MainActivity.Companion.EXTRA_VALIDATION_MESSAGE
 import com.example.rom.databinding.ActivityCameraBinding
@@ -43,7 +40,6 @@ import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.math.ceil
 import kotlin.random.Random
 
 /** 카메라를 표시하고 들어오는 프레임에 대해 객체 감지를 수행하는 액티비티 */
@@ -118,9 +114,6 @@ class CameraActivity : AppCompatActivity() {
         MediaPlayer.create(this, R.raw.shutter_sound)
     }
 
-    private var countDownTimer: CountDownTimer? = null
-    private var remainingTime: Int = 0
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
@@ -129,6 +122,14 @@ class CameraActivity : AppCompatActivity() {
         val inputShape = tflite.getInputTensor(0).shape()
         Timber.d("Model input shape: ${inputShape.contentToString()}")
 
+        // 초기 상태 설정
+        updatePoseEstimationButton(false)
+
+        initListener()
+        initObserver()
+    }
+
+    private fun initListener() {
         binding.btnCaptureCamera.setOnClickListener {
             it.isEnabled = false
 
@@ -136,11 +137,10 @@ class CameraActivity : AppCompatActivity() {
                 // 분석 재개
                 pauseAnalysis = false
                 binding.ivPrediction.visibility = View.GONE
-                cancelCountdownTimer()
             } else {
                 if (isFrontFacing) {
                     // 전면 모드일 경우 10초 타이머 시작
-                    startCountdownTimer()
+                    viewModel.startCountdownTimer()
                 } else {
                     // 후면 카메라일 경우 바로 캡처 및 분석
                     playShutterSound()
@@ -163,42 +163,38 @@ class CameraActivity : AppCompatActivity() {
         binding.btnTogglePoseEstimation.setOnClickListener {
             viewModel.togglePoseEstimation()
         }
+    }
 
-        // 초기 상태 설정
-        updatePoseEstimationButton(false)
-
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+    private fun initObserver() {
+        repeatOnStarted {
+            launch {
                 viewModel.isPoseEstimationEnabled.collect { flag ->
                     updatePoseEstimationButton(flag)
                 }
             }
+
+            launch {
+                viewModel.remainingSeconds.collect { remainingSeconds ->
+                    if (remainingSeconds > 0) {
+                        binding.tvTimer.visibility = View.VISIBLE
+                        binding.tvTimer.text = remainingSeconds.toString()
+                    } else {
+                        playShutterSound()
+                        captureAndAnalyzeImage()
+                    }
+                }
+            }
+
+            launch {
+                viewModel.isCountdownActive.collect { isActive ->
+                    if (isActive) {
+                        binding.tvTimer.visibility = View.VISIBLE
+                    } else {
+                        binding.tvTimer.visibility = View.GONE
+                    }
+                }
+            }
         }
-    }
-
-    private fun startCountdownTimer() {
-        remainingTime = 10
-        binding.tvTimer.visibility = View.VISIBLE
-        binding.tvTimer.text = remainingTime.toString()
-
-        countDownTimer = object : CountDownTimer(5000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                val secondsRemaining = ceil(millisUntilFinished / 1000.0).toInt()
-                binding.tvTimer.text = secondsRemaining.toString()
-            }
-
-            override fun onFinish() {
-                binding.tvTimer.visibility = View.GONE
-
-                playShutterSound()
-                captureAndAnalyzeImage()
-            }
-        }.start()
-    }
-
-    private fun cancelCountdownTimer() {
-        countDownTimer?.cancel()
-        binding.tvTimer.visibility = View.GONE
     }
 
     private fun playShutterSound() {

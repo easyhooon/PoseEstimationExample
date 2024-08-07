@@ -2,9 +2,15 @@ package com.example.rom
 
 import PoseEstimationHelper
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.math.acos
 import kotlin.math.sqrt
@@ -12,6 +18,33 @@ import kotlin.math.sqrt
 class CameraViewModel : ViewModel() {
     private val _isPoseEstimationEnabled = MutableStateFlow(false)
     val isPoseEstimationEnabled: StateFlow<Boolean> = _isPoseEstimationEnabled.asStateFlow()
+
+    private val _remainingSeconds = MutableStateFlow(10)
+    val remainingSeconds: StateFlow<Int> get() = _remainingSeconds
+
+    private val _isCountdownActive = MutableStateFlow(false)
+    val isCountdownActive: StateFlow<Boolean> = _isCountdownActive
+
+    private var countdownJob: Job? = null
+
+    fun startCountdownTimer() {
+        // 기존 작업 취소
+        cancelCountdownTimer()
+        _isCountdownActive.value = true
+        countdownJob = viewModelScope.launch {
+            (9 downTo 0).asFlow()
+                .onCompletion { _isCountdownActive.value = false }
+                .collect { remainingSeconds ->
+                    delay(1000)
+                    _remainingSeconds.value = remainingSeconds
+                }
+        }
+    }
+
+    private fun cancelCountdownTimer() {
+        countdownJob?.cancel()
+        countdownJob = null
+    }
 
     fun togglePoseEstimation() {
         _isPoseEstimationEnabled.value = !_isPoseEstimationEnabled.value
