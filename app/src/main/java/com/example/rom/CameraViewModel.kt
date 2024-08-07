@@ -28,22 +28,18 @@ class CameraViewModel : ViewModel() {
     private var countdownJob: Job? = null
 
     fun startCountdownTimer() {
-        // 기존 작업 취소
-        cancelCountdownTimer()
         _isCountdownActive.value = true
         countdownJob = viewModelScope.launch {
             (9 downTo 0).asFlow()
-                .onCompletion { _isCountdownActive.value = false }
+                .onCompletion {
+                    _isCountdownActive.value = false
+                    countdownJob = null
+                }
                 .collect { remainingSeconds ->
                     delay(1000)
                     _remainingSeconds.value = remainingSeconds
                 }
         }
-    }
-
-    private fun cancelCountdownTimer() {
-        countdownJob?.cancel()
-        countdownJob = null
     }
 
     fun togglePoseEstimation() {
