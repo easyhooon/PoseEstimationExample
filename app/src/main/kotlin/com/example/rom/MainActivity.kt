@@ -8,16 +8,11 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Rect
-import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
-import android.view.PixelCopy
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -42,12 +37,10 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
+import kotlin.math.round
 
-// TODO 오차 보정(문서 및 레포 참고)
 // TODO 사진 촬영시 Pose Estimation 이 사물을 제대로 인식하지 못하는 케이스 해결(신뢰할 수 있는 값만 선별)
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -163,29 +156,35 @@ class MainActivity : AppCompatActivity() {
                                 tvResult.visibility = View.VISIBLE
 
                                 tvLeftAngleBefore.visibility = View.VISIBLE
+                                val leftAngleBefore = roundToOneDecimal(it.leftAngleBefore)
                                 tvLeftAngleValueBefore.text =
-                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.leftAngleBefore, it.leftAngleBefore - 2.5, it.leftAngleBefore + 2.5)
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", leftAngleBefore, leftAngleBefore - 2.5, leftAngleBefore + 2.5)
                                 tvLeftAngleValueBefore.visibility = View.VISIBLE
 
                                 tvRightAngleBefore.visibility = View.VISIBLE
+                                val rightAngleBefore = roundToOneDecimal(it.rightAngleBefore)
                                 tvRightAngleValueBefore.text =
-                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.rightAngleBefore, it.rightAngleBefore - 2.5, it.rightAngleBefore + 2.5)
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", rightAngleBefore, rightAngleBefore - 2.5, rightAngleBefore + 2.5)
                                 tvRightAngleValueBefore.visibility = View.VISIBLE
 
                                 tvLeftShoulderAngle.visibility = View.VISIBLE
-                                tvLeftShoulderAngleValue.text = String.format("%.1f°", it.leftShoulderAngle)
+                                val leftShoulderAngle = roundToOneDecimal(it.leftShoulderAngle)
+                                tvLeftShoulderAngleValue.text = String.format("%.1f°", leftShoulderAngle)
                                 tvLeftShoulderAngleValue.visibility = View.VISIBLE
 
                                 tvRightShoulderAngle.visibility = View.VISIBLE
-                                tvRightShoulderAngleValue.text = String.format("%.1f°", it.rightShoulderAngle)
+                                val rightShoulderAngle = roundToOneDecimal(it.rightShoulderAngle)
+                                tvRightShoulderAngleValue.text = String.format("%.1f°", rightShoulderAngle)
                                 tvRightShoulderAngleValue.visibility = View.VISIBLE
 
                                 tvLeftElbowAngle.visibility = View.VISIBLE
-                                tvLeftElbowAngleValue.text = String.format("%.1f°", it.leftElbowAngle)
+                                val leftElbowAngle = roundToOneDecimal(it.leftElbowAngle)
+                                tvLeftElbowAngleValue.text = String.format("%.1f°", leftElbowAngle)
                                 tvLeftElbowAngleValue.visibility = View.VISIBLE
 
                                 tvRightElbowAngle.visibility = View.VISIBLE
-                                tvRightElbowAngleValue.text = String.format("%.1f°", it.rightElbowAngle)
+                                val rightElbowAngle = roundToOneDecimal(it.rightElbowAngle)
+                                tvRightElbowAngleValue.text = String.format("%.1f°", rightElbowAngle)
                                 tvRightElbowAngleValue.visibility = View.VISIBLE
 
                                 ivResultImage.load(it.imageByteArray)
@@ -194,13 +193,15 @@ class MainActivity : AppCompatActivity() {
                                 tvResult.visibility = View.VISIBLE
 
                                 tvLeftAngleAfter.visibility = View.VISIBLE
+                                val leftAngleAfter = roundToOneDecimal(it.leftAngleAfter)
                                 tvLeftAngleValueAfter.text =
-                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.leftAngleAfter, it.leftAngleAfter - 2.5, it.leftAngleAfter + 2.5)
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", leftAngleAfter, leftAngleAfter - 2.5, leftAngleAfter + 2.5)
                                 tvLeftAngleValueAfter.visibility = View.VISIBLE
 
                                 tvRightAngleAfter.visibility = View.VISIBLE
+                                val rightAngleAfter = roundToOneDecimal(it.rightAngleAfter)
                                 tvRightAngleValueAfter.text =
-                                    String.format("%.1f°(%.1f° ~ %.1f°)", it.rightAngleAfter, it.rightAngleAfter - 2.5, it.rightAngleAfter + 2.5)
+                                    String.format("%.1f°(%.1f° ~ %.1f°)", rightAngleAfter, rightAngleAfter - 2.5, rightAngleAfter + 2.5)
                                 tvRightAngleValueAfter.visibility = View.VISIBLE
 
                                 btnSave.visibility = View.VISIBLE
@@ -370,5 +371,9 @@ class MainActivity : AppCompatActivity() {
                 viewModel.clearValidationMessage()
             }
             .show()
+    }
+
+    private fun roundToOneDecimal(value: Float): Double {
+        return round(value * 10) / 10.0
     }
 }
