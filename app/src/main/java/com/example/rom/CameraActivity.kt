@@ -178,17 +178,17 @@ class CameraActivity : AppCompatActivity() {
 
     private fun startCountdownTimer() {
         remainingTime = 10
-        binding.tvTimber.visibility = View.VISIBLE
-        binding.tvTimber.text = remainingTime.toString()
+        binding.tvTimer.visibility = View.VISIBLE
+        binding.tvTimer.text = remainingTime.toString()
 
         countDownTimer = object : CountDownTimer(5000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val secondsRemaining = ceil(millisUntilFinished / 1000.0).toInt()
-                binding.tvTimber.text = secondsRemaining.toString()
+                binding.tvTimer.text = secondsRemaining.toString()
             }
 
             override fun onFinish() {
-                binding.tvTimber.visibility = View.GONE
+                binding.tvTimer.visibility = View.GONE
 
                 playShutterSound()
                 captureAndAnalyzeImage()
@@ -198,7 +198,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun cancelCountdownTimer() {
         countDownTimer?.cancel()
-        binding.tvTimber.visibility = View.GONE
+        binding.tvTimer.visibility = View.GONE
     }
 
     private fun playShutterSound() {
