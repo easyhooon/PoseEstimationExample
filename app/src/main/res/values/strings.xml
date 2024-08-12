@@ -3,4 +3,15 @@
     <string name="capture_button">Capture</string>
     <string name="switch_camera">Switch Camera</string>
     <string name="unknown">UNKNOWN</string>
+    <string name="result">결과</string>
+    <string name="before_left_armpit">보정 전 왼쪽 겨드랑이</string>
+    <string name="before_right_armpit">보정 전 오른쪽 겨드랑이</string>
+    <string name="left_sholuder">왼쪽 어깨</string>
+    <string name="right_shoulder">오른쪽 어깨</string>
+    <string name="left_elbow">왼쪽 팔꿈치</string>
+    <string name="right_elbow">오른쪽 팔꿈치</string>
+    <string name="after_left_armpit">보정 후 왼쪽 겨드랑이</string>
+    <string name="after_right_armpit">보정 후 오른쪽 겨드랑이</string>
+    <string name="capture">사진 촬영</string>
+    <string name="save">저장하기</string>
 </resources>
