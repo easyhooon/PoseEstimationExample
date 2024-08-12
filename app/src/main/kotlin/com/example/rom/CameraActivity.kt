@@ -216,7 +216,7 @@ class CameraActivity : AppCompatActivity() {
             postRotate(imageRotationDegrees.toFloat())
             if (isFrontFacing) {
                 // 전면 카메라일 때만 좌우로 뒤집기
-                postScale(-1f, 1f, bitmapBuffer.width / 2f, bitmapBuffer.height / 2f)
+                postScale(1f, 1f, bitmapBuffer.width / 2f, bitmapBuffer.height / 2f)
             } else {
                 // 후면 카메라일 경우 상하 좌우 반전
                 postScale(-1f, -1f, bitmapBuffer.width / 2f, bitmapBuffer.height / 2f)
@@ -239,9 +239,19 @@ class CameraActivity : AppCompatActivity() {
             // Step 4: 포즈 그리기
             val poseEstimationBitmap = drawPoseEstimation(rotatedBitmap, posePrediction)
 
+            // Step 5: 최종 이미지 좌우 반전 (전면 카메라일 경우에만)
+            val finalBitmap = if (isFrontFacing) {
+                val flipMatrix = Matrix().apply {
+                    postScale(-1f, 1f, poseEstimationBitmap.width / 2f, poseEstimationBitmap.height / 2f)
+                }
+                Bitmap.createBitmap(poseEstimationBitmap, 0, 0, poseEstimationBitmap.width, poseEstimationBitmap.height, flipMatrix, true)
+            } else {
+                poseEstimationBitmap
+            }
+
             val (armsAngle, validationMessage) = viewModel.calculateArmAngle(posePrediction)
             if (armsAngle != null) {
-                val imageByteArray = bitmapToByteArray(poseEstimationBitmap)
+                val imageByteArray = bitmapToByteArray(finalBitmap)
                 val resultIntent = Intent().apply {
                     putExtra(EXTRA_POSE_ESTIMATION_RESULT, ResultData(
                         armsAngle.leftAngleBefore,
@@ -396,7 +406,7 @@ class CameraActivity : AppCompatActivity() {
                         val matrix = Matrix().apply {
                             postRotate(imageRotationDegrees.toFloat())
                             if (isFrontFacing) {
-                                postScale(-1f, 1f, image.width / 2f, image.height / 2f)
+                                postScale(1f, 1f, image.width / 2f, image.height / 2f)
                             } else {
                                 // 후면 카메라일 경우 상하 반전
                                 postScale(-1f, -1f, image.width / 2f, image.height / 2f)
